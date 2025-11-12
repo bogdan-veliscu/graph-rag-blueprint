@@ -8,6 +8,7 @@ from src.graph_rag.graph.falkordb_adapter import FalkorDBAdapter
 from src.graph_rag.models import AnswerResult
 from src.graph_rag.query.answer_generator import AnswerGenerator
 from src.graph_rag.query.entity_linker import EntityLinker
+from src.graph_rag.query.explainability import ExplainabilityCollector
 from src.graph_rag.query.graph_traversal import GraphTraverser
 from src.graph_rag.query.query_parser import QueryParser
 from src.graph_rag.query.reranker import Reranker
@@ -31,6 +32,7 @@ class AsyncQueryOrchestrator:
         self.traverser = GraphTraverser(self.graph)
         self.reranker = Reranker()
         self.async_llm_client = AsyncLLMClient(max_concurrent=max_concurrent)
+        self.explainability_collector = ExplainabilityCollector()
 
     async def process_query_async(self, question: str) -> AnswerResult:
         """Process a query asynchronously.
@@ -42,41 +44,76 @@ class AsyncQueryOrchestrator:
             AnswerResult with answer and citations
         """
         import logging
+        import time
         logger = logging.getLogger(__name__)
+        
+        # Initialize explainability collector
+        collector = ExplainabilityCollector()
+        collector.start()
         
         try:
             # Parse query (synchronous)
+            parse_start = time.time()
             parsed_query = self.query_parser.parse(question)
+            collector.record_timing("query_parsing", time.time() - parse_start)
+            collector.record_query_parsing(parsed_query)
         except Exception as e:
             logger.error(f"Query parsing failed: {e}")
             parsed_query = {"entities": []}
 
         try:
             # Link entities (synchronous)
+            link_start = time.time()
             linked_entities = self.entity_linker.link_entities(parsed_query.get("entities", []))
+            collector.record_timing("entity_linking", time.time() - link_start)
+            collector.record_entity_linking(parsed_query.get("entities", []), linked_entities)
         except Exception as e:
             logger.error(f"Entity linking failed: {e}")
             linked_entities = []
 
         try:
-            # Retrieve chunks (synchronous)
+            # Retrieve chunks (synchronous) - get dense/sparse separately for explainability
+            retrieve_start = time.time()
+            from src.graph_rag.config import config
+            dense_matches = []
+            sparse_matches = []
+            if self.retriever.faiss_index and self.retriever.chunk_metadata:
+                try:
+                    dense_matches = self.retriever._dense_retrieve(question, config.dense_top_k)
+                except Exception:
+                    pass
+            if self.retriever.bm25_index and self.retriever.chunk_metadata:
+                try:
+                    sparse_matches = self.retriever._sparse_retrieve(question, config.sparse_top_k)
+                except Exception:
+                    pass
             matches = self.retriever.retrieve(question)
+            collector.record_timing("retrieval", time.time() - retrieve_start)
+            collector.record_retrieval(dense_matches, sparse_matches, matches)
             if not matches:
                 logger.warning("No chunks retrieved for query")
         except Exception as e:
             logger.error(f"Retrieval failed: {e}")
             matches = []
+            dense_matches = []
+            sparse_matches = []
 
         try:
             # Traverse graph (synchronous)
+            traverse_start = time.time()
             augmented_matches = self.traverser.traverse(linked_entities, matches)
+            collector.record_timing("graph_traversal", time.time() - traverse_start)
+            collector.record_graph_traversal(linked_entities, matches, augmented_matches)
         except Exception as e:
             logger.error(f"Graph traversal failed: {e}")
             augmented_matches = matches  # Fallback to original matches
 
         try:
             # Rerank (synchronous)
+            rerank_start = time.time()
             final_matches = self.reranker.rerank(augmented_matches)
+            collector.record_timing("reranking", time.time() - rerank_start)
+            collector.record_reranking(augmented_matches, final_matches)
             if not final_matches:
                 logger.warning("Reranking returned no matches")
                 final_matches = augmented_matches[:10]  # Fallback to top 10
@@ -86,7 +123,10 @@ class AsyncQueryOrchestrator:
 
         try:
             # Generate answer (async)
+            gen_start = time.time()
             result = await self._generate_answer_async(question, final_matches)
+            collector.record_timing("answer_generation", time.time() - gen_start)
+            collector.record_answer_generation(question, result.chunk_ids, result.citations)
         except Exception as e:
             logger.error(f"Answer generation failed: {e}")
             # Return error message as answer
@@ -95,6 +135,9 @@ class AsyncQueryOrchestrator:
                 citations=[],
                 chunk_ids=[m.chunk_id for m in final_matches[:10]] if final_matches else [],
             )
+
+        # Attach explainability data
+        result.explainability = collector.finalize()
 
         return result
 

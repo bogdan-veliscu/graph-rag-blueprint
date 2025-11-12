@@ -98,19 +98,48 @@ def _query_parallel(questions: List[str], output_path: str) -> List[str]:
             for i in range(0, len(questions), batch_size):
                 batch = questions[i : i + batch_size]
                 batch_results = await orchestrator.process_queries_async(batch)
-                results.extend([r.answer for r in batch_results])
+                results.extend(batch_results)  # Keep full AnswerResult objects
                 progress.update(len(batch))
         return results
 
-    answers = asyncio.run(process_with_progress())
+    results = asyncio.run(process_with_progress())
 
-    # Save to file in correct format: [{"answer": "..."}, ...]
-    output_data = [{"answer": answer} for answer in answers]
+    # Extract answers and explainability
+    answers = [r.answer for r in results]
+    
+    # Save to file - include explainability if enabled
+    from src.graph_rag.config import config
+    from src.graph_rag.query.explainability import format_explainability_human_readable
+    
+    output_data = []
+    for result in results:
+        item = {"answer": result.answer}
+        if config.explainability_enabled and result.explainability:
+            item["explainability"] = result.explainability
+            # Add human-readable format for detailed level
+            if config.explainability_level == "detailed":
+                item["explainability_text"] = format_explainability_human_readable(result.explainability)
+        output_data.append(item)
+    
     output_path_obj = Path(output_path)
     output_path_obj.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path_obj, "w", encoding="utf-8") as f:
         json.dump(output_data, f, indent=2, ensure_ascii=False)
     console.print(f"[bold green]✓[/bold green] Results saved to [cyan]{output_path}[/cyan]")
+
+    # Print explainability summary if enabled
+    if config.explainability_enabled and results and results[0].explainability:
+        console.print("\n[bold cyan]Explainability Summary:[/bold cyan]")
+        exp = results[0].explainability
+        if "summary" in exp:
+            summary = exp["summary"]
+            console.print(f"  Entities detected: {summary.get('entities_detected', 0)}")
+            console.print(f"  Entities linked: {summary.get('entities_linked', 0)}")
+            console.print(f"  Chunks retrieved: {summary.get('chunks_retrieved', 0)}")
+            console.print(f"  Chunks used: {summary.get('chunks_used', 0)}")
+        if "timing" in exp:
+            timing = exp["timing"]
+            console.print(f"  Total time: {timing.get('total_time_seconds', 0):.3f}s")
 
     console.print("[bold green]✓[/bold green] Query processing complete")
     return answers
@@ -130,15 +159,19 @@ def _query_sequential(questions: List[str], output_path: str) -> List[str]:
 
     logger.info(f"Processing {len(questions)} questions sequentially")
     orchestrator = QueryOrchestrator()
-    answers = []
+    results = []
 
     with ProgressTracker(len(questions), desc="Processing questions") as progress:
         for question in questions:
             result = orchestrator.process_query(question)
-            answers.append(result.answer)
+            results.append(result)
             progress.update(1)
 
-    # Save to file in correct format: [{"answer": "..."}, ...]
+    # Extract answers
+    answers = [r.answer for r in results]
+    
+    # Save to file - include explainability if enabled (note: sequential mode doesn't collect explainability yet)
+    from src.graph_rag.config import config
     output_data = [{"answer": answer} for answer in answers]
     output_path_obj = Path(output_path)
     output_path_obj.parent.mkdir(parents=True, exist_ok=True)

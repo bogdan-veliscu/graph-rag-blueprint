@@ -168,4 +168,5 @@ class AnswerResult:
     citations: List[str]
     chunk_ids: List[str]
     metadata: Dict[str, Any] = field(default_factory=dict)
+    explainability: Optional[Dict[str, Any]] = None  # Explainability information
 

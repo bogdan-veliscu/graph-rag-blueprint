@@ -38,6 +38,17 @@ class Config:
     llm_temperature: float = 0.1
     llm_max_tokens: int = 512
 
+    # Explainability
+    explainability_enabled: bool = os.getenv("EXPLAINABILITY_ENABLED", "false").lower() == "true"
+    explainability_level: Literal["minimal", "standard", "detailed"] = os.getenv(
+        "EXPLAINABILITY_LEVEL", "standard"
+    ).lower()
+    explainability_include_retrieval: bool = os.getenv("EXPLAINABILITY_INCLUDE_RETRIEVAL", "true").lower() == "true"
+    explainability_include_graph: bool = os.getenv("EXPLAINABILITY_INCLUDE_GRAPH", "true").lower() == "true"
+    explainability_include_entities: bool = os.getenv("EXPLAINABILITY_INCLUDE_ENTITIES", "true").lower() == "true"
+    explainability_include_timing: bool = os.getenv("EXPLAINABILITY_INCLUDE_TIMING", "true").lower() == "true"
+    explainability_include_scores: bool = os.getenv("EXPLAINABILITY_INCLUDE_SCORES", "true").lower() == "true"
+
     # Parallelization
     max_concurrent: int = int(os.getenv("MAX_CONCURRENT", "128"))
     query_batch_size: int = int(os.getenv("QUERY_BATCH_SIZE", "10"))
