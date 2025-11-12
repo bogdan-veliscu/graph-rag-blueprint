@@ -127,19 +127,58 @@ class FalkorDBAdapter:
                     "props_str": props_str,
                 })
             
-            # Build batch query - need WITH clause between MATCH-CREATE pairs
-            # Format: MATCH ... MATCH ... CREATE ... WITH ... MATCH ... MATCH ... CREATE ...
-            query_parts = []
-            for i, edge in enumerate(edge_data):
-                query_parts.append(f"MATCH (a{i}:{edge['source_type']} {{id: '{edge['source_id']}'}})")
-                query_parts.append(f"MATCH (b{i}:{edge['target_type']} {{id: '{edge['target_id']}'}})")
-                query_parts.append(f"CREATE (a{i})-[:{edge['edge_type']}{edge['props_str']}]->(b{i})")
-                # Add WITH clause between updates (except for last one)
-                if i < len(edge_data) - 1:
-                    query_parts.append(f"WITH a{i}, b{i}")
+            # Use individual queries instead of complex WITH clause chains
+            # This is more reliable and avoids connection timeouts
+            import logging
+            import time
+            logger = logging.getLogger(__name__)
             
-            combined_query = "\n".join(query_parts)
-            self.graph.query(combined_query)
+            max_retries = 3
+            retry_delay = 1.0
+            
+            # Create edges one by one with retry logic
+            for edge in edge_data:
+                for attempt in range(max_retries):
+                    try:
+                        query = (
+                            f"MATCH (a:{edge['source_type']} {{id: '{edge['source_id']}'}})\n"
+                            f"MATCH (b:{edge['target_type']} {{id: '{edge['target_id']}'}})\n"
+                            f"CREATE (a)-[:{edge['edge_type']}{edge['props_str']}]->(b)"
+                        )
+                        self.graph.query(query)
+                        # Success - break out of retry loop for this edge
+                        break
+                        
+                    except (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError) as e:
+                        logger.warning(
+                            f"FalkorDB connection error creating edge "
+                            f"{edge['source_id']} -> {edge['target_id']} "
+                            f"(attempt {attempt + 1}/{max_retries}): {e}"
+                        )
+                        if attempt < max_retries - 1:
+                            time.sleep(retry_delay * (2 ** attempt))  # Exponential backoff
+                            # Reconnect
+                            try:
+                                self.redis_client = redis.Redis(
+                                    host=config.falkordb_host,
+                                    port=config.falkordb_port,
+                                    decode_responses=True,
+                                    socket_connect_timeout=5,
+                                    socket_timeout=5,
+                                )
+                                self.graph = Graph(self.redis_client, config.falkordb_graph_name)
+                            except Exception as reconnect_error:
+                                logger.error(f"Failed to reconnect to FalkorDB: {reconnect_error}")
+                                raise
+                        else:
+                            logger.error(
+                                f"Failed to create edge {edge['source_id']} -> {edge['target_id']} "
+                                f"after {max_retries} attempts"
+                            )
+                            raise
+                    except Exception as e:
+                        logger.error(f"Unexpected error creating edge: {e}")
+                        raise
 
     def get_node(self, node_type: NodeType, node_id: str) -> Optional[Dict[str, Any]]:
         """Get a node by ID.

@@ -303,7 +303,8 @@ def ingest_documents(document_paths: List[str]) -> None:
                 total=total_mentions
             )
             # Process in batches with progress updates
-            batch_size = 1000
+            # Reduced batch size to avoid connection timeouts
+            batch_size = 50  # Smaller batches for reliability
             for batch_start in range(0, total_mentions, batch_size):
                 batch = mention_edges[batch_start : batch_start + batch_size]
                 # Update progress before processing batch
@@ -325,7 +326,8 @@ def ingest_documents(document_paths: List[str]) -> None:
                 total=len(relationships)
             )
             # Process in batches with progress updates
-            batch_size = 1000
+            # Reduced batch size to avoid connection timeouts
+            batch_size = 50  # Smaller batches for reliability
             for batch_start in range(0, len(relationships), batch_size):
                 batch = relationships[batch_start : batch_start + batch_size]
                 # Update progress before processing batch
