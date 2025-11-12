@@ -108,10 +108,10 @@ class LLMClient:
         Returns:
             Generated text
         """
-        # Check both config and environment variable (in case load_dotenv didn't work)
+        # Check both config and environment variables (support both ANTHROPIC_API_KEY and ANTHROPIC_AUTH_TOKEN)
         import os
         from pathlib import Path
-        api_key = config.anthropic_api_key or os.getenv("ANTHROPIC_API_KEY", "")
+        api_key = config.anthropic_api_key or os.getenv("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_AUTH_TOKEN", "")
         if not api_key:
             env_file_path = Path(__file__).parent.parent.parent / ".env"
             raise ValueError(
