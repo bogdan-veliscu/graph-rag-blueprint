@@ -85,6 +85,7 @@ def _query_parallel(questions: List[str], output_path: str) -> List[str]:
     """
     import asyncio
 
+    from src.graph_rag.config import config
     from src.graph_rag.query.async_orchestrator import AsyncQueryOrchestrator
 
     logger.info(f"Processing {len(questions)} questions in parallel")
@@ -255,12 +256,31 @@ if __name__ == "__main__":
         ))
         answers = query(questions, output_path=args.output, parallel=not args.no_parallel)
 
-        # Print summary table
+        # Print summary table with per-question details
         summary_table = Table(title="Query Summary", show_header=True, header_style="bold cyan")
-        summary_table.add_column("Metric", style="cyan")
-        summary_table.add_column("Value", style="green")
-        summary_table.add_row("Questions Processed", str(len(answers)))
-        summary_table.add_row("Output File", args.output)
+        summary_table.add_column("No.", style="cyan", width=5, justify="right")
+        summary_table.add_column("Question (first 100 chars)", style="yellow", width=50, overflow="fold")
+        summary_table.add_column("Answer (first 200 chars)", style="green", width=70, overflow="fold")
+        
+        # Truncate function
+        def truncate(text: str, max_len: int) -> str:
+            """Truncate text to max_len characters, adding '...' if truncated."""
+            if not text:
+                return "(empty)"
+            text_str = str(text).strip()
+            if len(text_str) <= max_len:
+                return text_str
+            return text_str[:max_len - 3] + "..."
+        
+        # Add rows for each question-answer pair
+        for i, (question, answer) in enumerate(zip(questions, answers), 1):
+            question_truncated = truncate(question, 100)
+            answer_truncated = truncate(answer, 200)
+            summary_table.add_row(str(i), question_truncated, answer_truncated)
+        
+        # Add summary row
+        summary_table.add_row("", "", "", style="dim")
+        summary_table.add_row("Total", f"{len(questions)} questions processed", f"Saved to {args.output}", style="bold")
         console.print(summary_table)
     else:
         console.print(f"[bold red]✗[/bold red] Unknown command: [cyan]{command}[/cyan]")
