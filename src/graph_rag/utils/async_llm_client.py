@@ -162,9 +162,12 @@ class AsyncLLMClient:
                     result = response.json()
                     answer = result.get("content", [{}])[0].get("text", "")
                     if not answer:
-                        logger.warning("Anthropic returned empty response")
+                        logger.warning(f"Anthropic returned empty response (attempt {attempt + 1}/{max_retries})")
                         if attempt < max_retries - 1:
+                            await asyncio.sleep(1)  # Brief delay before retry
                             continue
+                        # After all retries, return error message instead of empty string
+                        raise ValueError("Anthropic API returned empty response after all retries")
                     return answer
             except httpx.TimeoutException as e:
                 logger.warning(f"Anthropic timeout (attempt {attempt + 1}/{max_retries}): {e}")
