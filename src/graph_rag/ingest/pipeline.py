@@ -306,8 +306,12 @@ def ingest_documents(document_paths: List[str]) -> None:
             batch_size = 1000
             for batch_start in range(0, total_mentions, batch_size):
                 batch = mention_edges[batch_start : batch_start + batch_size]
+                # Update progress before processing batch
+                progress.update(mentions_task, completed=batch_start)
+                # Process batch
                 graph_builder.add_mentions_edges_batch(batch, batch_size=batch_size)
-                progress.update(mentions_task, completed=min(batch_start + batch_size, total_mentions))
+                # Update progress after processing batch
+                progress.update(mentions_task, completed=min(batch_start + len(batch), total_mentions))
 
         # Extract relationships
         console.print(f"\n[cyan]Extracting relationships...[/cyan]")
@@ -324,8 +328,12 @@ def ingest_documents(document_paths: List[str]) -> None:
             batch_size = 1000
             for batch_start in range(0, len(relationships), batch_size):
                 batch = relationships[batch_start : batch_start + batch_size]
+                # Update progress before processing batch
+                progress.update(rel_task, completed=batch_start)
+                # Process batch
                 graph_builder.add_relationships_batch(batch, batch_size=batch_size)
-                progress.update(rel_task, completed=min(batch_start + batch_size, len(relationships)))
+                # Update progress after processing batch
+                progress.update(rel_task, completed=min(batch_start + len(batch), len(relationships)))
 
     # Build FAISS index
     console.print(f"\n[cyan]Building FAISS index...[/cyan]")
