@@ -41,23 +41,60 @@ class AsyncQueryOrchestrator:
         Returns:
             AnswerResult with answer and citations
         """
-        # Parse query (synchronous)
-        parsed_query = self.query_parser.parse(question)
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # Parse query (synchronous)
+            parsed_query = self.query_parser.parse(question)
+        except Exception as e:
+            logger.error(f"Query parsing failed: {e}")
+            parsed_query = {"entities": []}
 
-        # Link entities (synchronous)
-        linked_entities = self.entity_linker.link_entities(parsed_query.get("entities", []))
+        try:
+            # Link entities (synchronous)
+            linked_entities = self.entity_linker.link_entities(parsed_query.get("entities", []))
+        except Exception as e:
+            logger.error(f"Entity linking failed: {e}")
+            linked_entities = []
 
-        # Retrieve chunks (synchronous)
-        matches = self.retriever.retrieve(question)
+        try:
+            # Retrieve chunks (synchronous)
+            matches = self.retriever.retrieve(question)
+            if not matches:
+                logger.warning("No chunks retrieved for query")
+        except Exception as e:
+            logger.error(f"Retrieval failed: {e}")
+            matches = []
 
-        # Traverse graph (synchronous)
-        augmented_matches = self.traverser.traverse(linked_entities, matches)
+        try:
+            # Traverse graph (synchronous)
+            augmented_matches = self.traverser.traverse(linked_entities, matches)
+        except Exception as e:
+            logger.error(f"Graph traversal failed: {e}")
+            augmented_matches = matches  # Fallback to original matches
 
-        # Rerank (synchronous)
-        final_matches = self.reranker.rerank(augmented_matches)
+        try:
+            # Rerank (synchronous)
+            final_matches = self.reranker.rerank(augmented_matches)
+            if not final_matches:
+                logger.warning("Reranking returned no matches")
+                final_matches = augmented_matches[:10]  # Fallback to top 10
+        except Exception as e:
+            logger.error(f"Reranking failed: {e}")
+            final_matches = augmented_matches[:10]  # Fallback to top 10
 
-        # Generate answer (async)
-        result = await self._generate_answer_async(question, final_matches)
+        try:
+            # Generate answer (async)
+            result = await self._generate_answer_async(question, final_matches)
+        except Exception as e:
+            logger.error(f"Answer generation failed: {e}")
+            # Return error message as answer
+            result = AnswerResult(
+                answer=f"I encountered an error generating an answer: {str(e)}. Please try again or rephrase your question.",
+                citations=[],
+                chunk_ids=[m.chunk_id for m in final_matches[:10]] if final_matches else [],
+            )
 
         return result
 
@@ -137,7 +174,27 @@ Answer the question using ONLY the context above. Include inline citations like 
         Returns:
             List of AnswerResult objects
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
         tasks = [self.process_query_async(q) for q in questions]
-        results = await asyncio.gather(*tasks)
-        return results
+        # Use return_exceptions=True to prevent one failure from crashing all queries
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Convert exceptions to error AnswerResults
+        processed_results = []
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                logger.error(f"Query {i} failed: {result}")
+                processed_results.append(
+                    AnswerResult(
+                        answer=f"I encountered an error processing this question: {str(result)}. Please try again or rephrase your question.",
+                        citations=[],
+                        chunk_ids=[],
+                    )
+                )
+            else:
+                processed_results.append(result)
+        
+        return processed_results
 
