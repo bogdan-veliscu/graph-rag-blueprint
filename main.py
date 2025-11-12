@@ -247,13 +247,24 @@ if __name__ == "__main__":
             console.print("[bold red]✗[/bold red] Error: No questions provided. Use --file or provide questions as arguments.")
             sys.exit(1)
 
+        # Get LLM provider info for display
+        from src.graph_rag.config import config
+        llm_info = []
+        if config.llm_provider == "ollama":
+            llm_info.append(f"Model: [bold]{config.ollama_model}[/bold]")
+            llm_info.append(f"Endpoint: [bold]{config.ollama_base_url}[/bold]")
+        elif config.llm_provider == "anthropic":
+            llm_info.append(f"Provider: [bold]Anthropic[/bold]")
+            llm_info.append(f"Endpoint: [bold]{config.anthropic_base_url}[/bold]")
+        
         # Process queries
-        console.print(Panel.fit(
+        panel_content = (
             f"[bold cyan]GraphRAG Query Processing[/bold cyan]\n"
             f"Processing [bold]{len(questions)}[/bold] question(s)\n"
-            f"Mode: [bold]{'Parallel' if not args.no_parallel else 'Sequential'}[/bold]",
-            border_style="cyan"
-        ))
+            f"Mode: [bold]{'Parallel' if not args.no_parallel else 'Sequential'}[/bold]\n"
+            f"{' | '.join(llm_info)}"
+        )
+        console.print(Panel.fit(panel_content, border_style="cyan"))
         answers = query(questions, output_path=args.output, parallel=not args.no_parallel)
 
         # Print summary table with per-question details

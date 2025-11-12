@@ -32,7 +32,18 @@ query: ## Query with a single question (usage: make query Q="your question")
 		echo "Usage: make query Q='your question here'"; \
 		exit 1; \
 	fi
-	@bash -c 'if [ -f .env ]; then set -a; . .env; set +a; fi; python3 main.py query "$(Q)"'
+	@bash -c 'if [ -f .env ]; then set -a; . .env; set +a; fi; \
+		[ -n "$(LLM_PROVIDER)" ] && export LLM_PROVIDER="$(LLM_PROVIDER)"; \
+		[ -n "$(OLLAMA_BASE_URL)" ] && export OLLAMA_BASE_URL="$(OLLAMA_BASE_URL)"; \
+		[ -n "$(OLLAMA_MODEL)" ] && export OLLAMA_MODEL="$(OLLAMA_MODEL)"; \
+		[ -n "$(ANTHROPIC_API_KEY)" ] && export ANTHROPIC_API_KEY="$(ANTHROPIC_API_KEY)"; \
+		[ -n "$(ANTHROPIC_AUTH_TOKEN)" ] && export ANTHROPIC_AUTH_TOKEN="$(ANTHROPIC_AUTH_TOKEN)"; \
+		[ -n "$(ANTHROPIC_BASE_URL)" ] && export ANTHROPIC_BASE_URL="$(ANTHROPIC_BASE_URL)"; \
+		export LLM_PROVIDER="$${LLM_PROVIDER:-ollama}"; \
+		export OLLAMA_BASE_URL="$${OLLAMA_BASE_URL:-http://localhost:11434}"; \
+		export OLLAMA_MODEL="$${OLLAMA_MODEL:-llama3.1:8b}"; \
+		export ANTHROPIC_BASE_URL="$${ANTHROPIC_BASE_URL:-https://api.anthropic.com/v1/messages}"; \
+		python3 main.py query "$(Q)"'
 
 query-file: ## Query from a JSON file (usage: make query-file FILE=data/sample_questions.json)
 	@if [ -z "$(FILE)" ]; then \
