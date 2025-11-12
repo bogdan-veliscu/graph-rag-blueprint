@@ -50,7 +50,18 @@ query-file: ## Query from a JSON file (usage: make query-file FILE=data/sample_q
 		echo "Usage: make query-file FILE=data/sample_questions.json"; \
 		exit 1; \
 	fi
-	@bash -c 'if [ -f .env ]; then set -a; . .env; set +a; fi; python3 main.py query --file $(FILE) --output answers.json'
+	@bash -c 'if [ -f .env ]; then set -a; . .env; set +a; fi; \
+		[ -n "$(LLM_PROVIDER)" ] && export LLM_PROVIDER="$(LLM_PROVIDER)"; \
+		[ -n "$(OLLAMA_BASE_URL)" ] && export OLLAMA_BASE_URL="$(OLLAMA_BASE_URL)"; \
+		[ -n "$(OLLAMA_MODEL)" ] && export OLLAMA_MODEL="$(OLLAMA_MODEL)"; \
+		[ -n "$(ANTHROPIC_API_KEY)" ] && export ANTHROPIC_API_KEY="$(ANTHROPIC_API_KEY)"; \
+		[ -n "$(ANTHROPIC_AUTH_TOKEN)" ] && export ANTHROPIC_AUTH_TOKEN="$(ANTHROPIC_AUTH_TOKEN)"; \
+		[ -n "$(ANTHROPIC_BASE_URL)" ] && export ANTHROPIC_BASE_URL="$(ANTHROPIC_BASE_URL)"; \
+		export LLM_PROVIDER="$${LLM_PROVIDER:-ollama}"; \
+		export OLLAMA_BASE_URL="$${OLLAMA_BASE_URL:-http://localhost:11434}"; \
+		export OLLAMA_MODEL="$${OLLAMA_MODEL:-llama3.1:8b}"; \
+		export ANTHROPIC_BASE_URL="$${ANTHROPIC_BASE_URL:-https://api.anthropic.com/v1/messages}"; \
+		python3 main.py query --file $(FILE) --output answers.json'
 
 test: ## Run all tests
 	python3 -m pytest tests/ -v
@@ -73,10 +84,32 @@ format: ## Format code with black and ruff
 	ruff check --fix src/ tests/ main.py scripts/
 
 demo: ## Run complete demo (ingest + process ~400 questions)
-	@bash -c 'if [ -f .env ]; then set -a; . .env; set +a; fi; python3 scripts/run_demo.py'
+	@bash -c 'if [ -f .env ]; then set -a; . .env; set +a; fi; \
+		[ -n "$(LLM_PROVIDER)" ] && export LLM_PROVIDER="$(LLM_PROVIDER)"; \
+		[ -n "$(OLLAMA_BASE_URL)" ] && export OLLAMA_BASE_URL="$(OLLAMA_BASE_URL)"; \
+		[ -n "$(OLLAMA_MODEL)" ] && export OLLAMA_MODEL="$(OLLAMA_MODEL)"; \
+		[ -n "$(ANTHROPIC_API_KEY)" ] && export ANTHROPIC_API_KEY="$(ANTHROPIC_API_KEY)"; \
+		[ -n "$(ANTHROPIC_AUTH_TOKEN)" ] && export ANTHROPIC_AUTH_TOKEN="$(ANTHROPIC_AUTH_TOKEN)"; \
+		[ -n "$(ANTHROPIC_BASE_URL)" ] && export ANTHROPIC_BASE_URL="$(ANTHROPIC_BASE_URL)"; \
+		export LLM_PROVIDER="$${LLM_PROVIDER:-ollama}"; \
+		export OLLAMA_BASE_URL="$${OLLAMA_BASE_URL:-http://localhost:11434}"; \
+		export OLLAMA_MODEL="$${OLLAMA_MODEL:-llama3.1:8b}"; \
+		export ANTHROPIC_BASE_URL="$${ANTHROPIC_BASE_URL:-https://api.anthropic.com/v1/messages}"; \
+		python3 scripts/run_demo.py'
 
 demo-skip-ingest: ## Run demo skipping ingestion (for testing queries only)
-	@bash -c 'if [ -f .env ]; then set -a; . .env; set +a; fi; python3 scripts/run_demo.py --skip-ingest'
+	@bash -c 'if [ -f .env ]; then set -a; . .env; set +a; fi; \
+		[ -n "$(LLM_PROVIDER)" ] && export LLM_PROVIDER="$(LLM_PROVIDER)"; \
+		[ -n "$(OLLAMA_BASE_URL)" ] && export OLLAMA_BASE_URL="$(OLLAMA_BASE_URL)"; \
+		[ -n "$(OLLAMA_MODEL)" ] && export OLLAMA_MODEL="$(OLLAMA_MODEL)"; \
+		[ -n "$(ANTHROPIC_API_KEY)" ] && export ANTHROPIC_API_KEY="$(ANTHROPIC_API_KEY)"; \
+		[ -n "$(ANTHROPIC_AUTH_TOKEN)" ] && export ANTHROPIC_AUTH_TOKEN="$(ANTHROPIC_AUTH_TOKEN)"; \
+		[ -n "$(ANTHROPIC_BASE_URL)" ] && export ANTHROPIC_BASE_URL="$(ANTHROPIC_BASE_URL)"; \
+		export LLM_PROVIDER="$${LLM_PROVIDER:-ollama}"; \
+		export OLLAMA_BASE_URL="$${OLLAMA_BASE_URL:-http://localhost:11434}"; \
+		export OLLAMA_MODEL="$${OLLAMA_MODEL:-llama3.1:8b}"; \
+		export ANTHROPIC_BASE_URL="$${ANTHROPIC_BASE_URL:-https://api.anthropic.com/v1/messages}"; \
+		python3 scripts/run_demo.py --skip-ingest'
 
 validate-graph: ## Validate graph structure after ingestion
 	@bash -c 'if [ -f .env ]; then set -a; . .env; set +a; fi; python3 scripts/validate_graph.py'
