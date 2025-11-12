@@ -732,18 +732,18 @@ def retrieve(
 
 **Estimated Time**: 3-4 hours
 
-### Phase 6: Documentation Update (Priority: HIGH)
+### Phase 6: Documentation Update (Priority: HIGH) ✅ **COMPLETED**
 
 **Goal**: Update all critical documentation
 
 **Tasks**:
 1. ✅ Create comprehensive rebuild plan (`docs/plan.md`)
-2. ⏳ Update `README.md` with rich citation examples
-3. ⏳ Update `docs/ARCHITECTURE.md` with metadata flow diagrams
-4. ⏳ Update `docs/SOURCE_DATA_INGESTION_IMPLEMENTATION.md` with fixes
-5. ⏳ Archive non-critical documentation to `docs/archive/`
+2. ✅ Update `README.md` with rich citation examples
+3. ✅ Update `docs/ARCHITECTURE.md` with metadata flow diagrams
+4. ✅ Update `docs/SOURCE_DATA_INGESTION_IMPLEMENTATION.md` with citation implementation details
+5. ⏳ Archive non-critical documentation to `docs/archive/` (optional cleanup)
 
-**Estimated Time**: 4-6 hours
+**Status**: Core documentation updated with citation examples, metadata flow diagrams, and implementation details.
 
 ---
 
@@ -837,7 +837,8 @@ def retrieve(
    ```bash
    make falkordb-start
    # Or manually:
-   docker run -d -p 6379:6379 falkordb/falkordb:latest
+   docker run -d --name falkordb -p 6379:6379 falkordb/falkordb:latest
+   # Note: If FalkorDB runs on port 6380, set FALKORDB_PORT=6380
    ```
 
 4. **Configure LLM Provider**:
@@ -855,16 +856,18 @@ def retrieve(
 
 5. **Ingest Documents**:
    ```bash
-   make ingest-falkordb
+   make ingest
+   # Or for fast testing:
+   make ingest-fast
    # Or manually:
-   uv run python -c "from main import ingest; ingest(['data/source_data/'])"
+   python3 main.py ingest data/source_data/
    ```
 
 6. **Run Benchmark**:
    ```bash
-   make benchmark-test
-   # Or manually:
-   uv run python scripts/run_benchmark.py --questions data/questions_7.json
+   python scripts/benchmark_performance.py --count 400
+   # Or with questions file:
+   python scripts/benchmark_performance.py --questions-file data/test_questions_400.json
    ```
 
 ### Configuration

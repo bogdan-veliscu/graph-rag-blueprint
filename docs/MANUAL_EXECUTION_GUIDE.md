@@ -1,19 +1,27 @@
-# Manual Execution Guide - GraphRAG Optimization
+# Manual Execution Guide - GraphRAG System
 
-This guide shows you how to manually run the long-running optimization tasks in a separate tmux session.
+This guide shows you how to manually run long-running tasks and manage the system.
 
-## Current State
+## Available Scripts
 
-**Baseline Evaluation Complete**:
-- 130-question sample analyzed
-- Mean score: 55.5%
-- Pass rate: 16.9%
-- Full findings: `docs/BASELINE_FINDINGS.md`
+**Core Scripts**:
+- ✅ `scripts/benchmark_performance.py` - Performance benchmark for 400 questions
+- ✅ `scripts/generate_test_questions.py` - Generate test questions for benchmarking
+- ✅ `scripts/evaluate.py` - Evaluate answers using LLM-as-judge
+- ✅ `scripts/run_demo.py` - Run complete demo (ingest + query)
+- ✅ `scripts/validate_graph.py` - Validate graph structure
 
-**Scripts Ready**:
-- ✅ `scripts/quick_optimize.py` - Quick 50-question validation (~15min)
-- ✅ `scripts/optimize_retrieval.py` - Full 400-question optimization (~6-8 hours)
-- ✅ `scripts/analyze_baseline.py` - Results analysis
+## Current System State
+
+**Ingestion**: Optimized with batch processing
+- Entity resolution: Batched FAISS (10K entities per batch)
+- Edge creation: Batched Cypher queries (1000 edges per batch)
+- File processing: Parallel async (up to 8 workers)
+
+**Query Processing**: Parallel with progress tracking
+- Default: 128 concurrent queries
+- Batch size: 10 questions per batch
+- Target: 400 questions in ≤60 minutes
 
 ## Step 1: Create Tmux Session
 
@@ -34,19 +42,18 @@ tmux attach -t graphrag
 - `tmux ls` - List sessions
 - `tmux kill-session -t graphrag` - Kill session
 
-## Step 2: Option A - Quick Validation (Recommended First)
+## Step 2: Run Performance Benchmark
 
-Run a 50-question test to validate cross-encoder gains before committing to full run:
+Run performance benchmark to validate 400 questions can be processed in ≤60 minutes:
 
 ```bash
-cd /Users/bogdan/work/freelance/graph-rag-legal
+cd /Users/bogdan/work/freelance/graph-rag-blueprint
 
-# Run quick validation (2 experiments, 50 questions each, ~30 minutes total)
-uv run python scripts/quick_optimize.py \
-    --graph output/graph.pkl \
-    --questions data/questions_400_v2.json \
-    --sample-size 50 \
-    --output-dir output/quick_test
+# Generate test questions (if needed)
+python scripts/generate_test_questions.py --count 400 --output data/test_questions_400.json
+
+# Run benchmark
+python scripts/benchmark_performance.py --questions-file data/test_questions_400.json
 
 # You can detach with Ctrl+b d and it will keep running
 ```
@@ -54,59 +61,35 @@ uv run python scripts/quick_optimize.py \
 **Expected Output**:
 ```
 ======================================================================
-QUICK VALIDATION SUMMARY
+Benchmark Results
 ======================================================================
-Baseline (from 130-question eval): 55.5%
-
-Cross-Encoder Enabled (α=0.5)            : 70.5% (+15.0 points)
-Cross-Encoder + Fusion α=0.7             : 78.2% (+22.7 points)
-
-🏆 Best Quick Test: Cross-Encoder + Fusion α=0.7
-   Score: 78.2%
-
-✅ VALIDATION SUCCESSFUL
-   Cross-encoder showed expected +15-20 point gain
-   Safe to proceed with full 400-question optimization
+Questions Processed: 400
+Elapsed Time: 28.5 minutes
+Target Time: 60 minutes
+Time Margin: 31.5 minutes
+Throughput: 14.04 questions/minute
+Status: PASS
+======================================================================
 ```
 
-**Decision Criteria**:
-- **≥70%** → ✅ Proceed with full optimization
-- **65-70%** → ⚠️ Partial success, may need additional work
-- **<65%** → ❌ Investigate retrieval issues
+**Success Criteria**:
+- **≤60 minutes** → ✅ Meets objective requirement
+- **>60 minutes** → ⚠️ Need to optimize (reduce max_concurrent, check LLM response times)
 
-## Step 3: Option B - Full Optimization (If Validation Successful)
+## Step 3: Run Full Demo
 
-Run full 400-question optimization across 4 configurations (~6-8 hours):
+Run complete demo workflow (ingest + query processing):
 
 ```bash
-cd /Users/bogdan/work/freelance/graph-rag-legal
+cd /Users/bogdan/work/freelance/graph-rag-blueprint
 
-# Run full optimization (4 experiments × 400 questions × ~18s each)
-uv run python scripts/optimize_retrieval.py \
-    --graph output/graph.pkl \
-    --questions data/questions_400_v2.json \
-    --output-dir output/optimization
+# Run demo (ingests if needed, then processes questions)
+python scripts/run_demo.py
 
-# Detach with Ctrl+b d - this will take several hours
-```
+# Or skip ingestion if graph already exists
+python scripts/run_demo.py --skip-ingest
 
-**Expected Output**:
-```
-======================================================================
-OPTIMIZATION RESULTS SUMMARY
-======================================================================
-Configuration                         Mean Score    Q/min Duration
-----------------------------------------------------------------------
-Baseline (α=0.5, CE=off)                   55.5%    3.24     2.1h
-Cross-Encoder (α=0.5, CE=on)              70.2%    2.98     2.2h
-Fusion α=0.7 + CE                         82.5%    2.95     2.3h
-Fusion α=0.3 + CE                         75.8%    3.01     2.2h
-
-======================================================================
-🏆 BEST CONFIGURATION: Fusion α=0.7 + CE
-   Mean Score: 82.5%
-   Results: output/optimization/fusion_0.7_ce.json
-======================================================================
+# Detach with Ctrl+b d - this will take 30-60 minutes
 ```
 
 ## Step 4: Monitor Progress
@@ -120,8 +103,9 @@ tmux ls
 tmux capture-pane -t graphrag -p | tail -20
 
 # Check output files
-ls -lh output/quick_test/
-ls -lh output/optimization/
+ls -lh answers.json
+ls -lh benchmark_results.json
+ls -lh evaluation_results.json
 ```
 
 ### From Inside Tmux
@@ -129,8 +113,8 @@ ls -lh output/optimization/
 # Attach to running session
 tmux attach -t graphrag
 
-# View in real-time (Ctrl+C to stop following)
-tail -f output/quick_test/cross_encoder.txt
+# View progress in real-time
+# Progress bars are shown automatically during execution
 ```
 
 ## Step 5: Analyze Results
@@ -138,12 +122,14 @@ tail -f output/quick_test/cross_encoder.txt
 After benchmark completes:
 
 ```bash
-# Analyze quick validation results
-cat output/quick_test/validation_summary.json
+# View benchmark results
+cat benchmark_results.json | python3 -m json.tool
 
-# Analyze full optimization results (if run)
-uv run python scripts/analyze_baseline.py \
-    --results output/optimization/fusion_0.7_ce.json
+# View answers
+cat answers.json | python3 -m json.tool
+
+# Evaluate answers (if evaluation was run)
+cat evaluation_results.json | python3 -m json.tool
 ```
 
 ## Alternative: Run in Background with nohup
@@ -151,19 +137,16 @@ uv run python scripts/analyze_baseline.py \
 If you don't want to use tmux:
 
 ```bash
-# Quick validation
-nohup uv run python scripts/quick_optimize.py \
-    --graph output/graph.pkl \
-    --questions data/questions_400_v2.json \
-    --sample-size 50 \
-    --output-dir output/quick_test \
-    > output/quick_test.log 2>&1 &
+# Run benchmark in background
+nohup python scripts/benchmark_performance.py \
+    --count 400 \
+    > benchmark.log 2>&1 &
 
 # Get process ID
 echo $!
 
 # Monitor log
-tail -f output/quick_test.log
+tail -f benchmark.log
 
 # Kill if needed
 kill <process-id>
@@ -172,11 +155,11 @@ kill <process-id>
 ## Recommended Workflow
 
 1. **Start tmux session**: `tmux new -s graphrag`
-2. **Run quick validation**: ~30 minutes, validates approach
+2. **Run benchmark**: ~30-60 minutes, validates performance
 3. **Detach**: `Ctrl+b d` (keeps running)
-4. **Check results**: After 30min, check `output/quick_test/validation_summary.json`
-5. **If successful**: Run full optimization in same tmux session
-6. **Final analysis**: Review results and select best configuration
+4. **Check results**: After completion, check `benchmark_results.json`
+5. **If successful**: Run full demo or process questions
+6. **Final analysis**: Review answers and evaluation results
 
 ## Troubleshooting
 
@@ -200,34 +183,35 @@ tmux kill-session -t graphrag
 
 ### Check if still running
 ```bash
-# Check for Python benchmark processes
-ps aux | grep "run_benchmark.py"
+# Check for Python processes
+ps aux | grep "benchmark_performance.py"
+ps aux | grep "run_demo.py"
 
 # Kill if needed
-pkill -f "run_benchmark.py"
+pkill -f "benchmark_performance.py"
+pkill -f "run_demo.py"
 ```
 
-## Next Steps After Optimization
+## Next Steps After Benchmarking
 
-1. **Review Results**: Check `output/optimization/optimization_summary.json`
-2. **Select Best Config**: Highest mean score
-3. **Update Config**: Update `src/config.py` with best parameters
-4. **Final Validation**: Run one more 100-question test to confirm
-5. **Documentation**: Update docs with final results
+1. **Review Results**: Check `benchmark_results.json`
+2. **Verify Performance**: Ensure ≤60 minutes for 400 questions
+3. **Optimize if Needed**: Adjust `max_concurrent` or `query_batch_size` in config
+4. **Run Evaluation**: Evaluate answers for quality metrics
+5. **Documentation**: Update docs with performance results
 
 ## Expected Timeline
 
 | Task | Duration | Output |
 |------|----------|--------|
-| Quick Validation | 30 min | validation_summary.json |
-| Full Optimization | 6-8 hours | optimization_summary.json |
-| Analysis | 10 min | Comprehensive report |
-| **Total** | **7-9 hours** | **Final optimized config** |
+| Generate Questions | 1 min | test_questions_400.json |
+| Performance Benchmark | 30-60 min | benchmark_results.json |
+| Full Demo | 30-60 min | answers.json |
+| Evaluation | 10-20 min | evaluation_results.json |
+| **Total** | **1-2 hours** | **Complete results** |
 
 ## Success Criteria
 
-- **Minimum**: 85% mean score
-- **Target**: 90-95% mean score
-- **Stretch**: >95% mean score
-
-Current baseline is 55.5%, so we need +30-40 percentage points improvement.
+- **Performance**: ≤60 minutes for 400 questions
+- **Accuracy**: >95% target across evaluation dimensions
+- **Throughput**: ≥6.67 questions/minute

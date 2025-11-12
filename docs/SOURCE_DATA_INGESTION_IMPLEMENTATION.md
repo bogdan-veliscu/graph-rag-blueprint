@@ -288,12 +288,42 @@ python scripts/validate_sample_questions.py
 
 6. **Backward Compatible**: Regular markdown files (without special tags) continue to work as before
 
+## Citation Implementation ✅
+
+### Rich Metadata Citations
+
+The system now generates **Vancouver-style citations** using rich metadata extracted during ingestion:
+
+**Implementation**: `src/graph_rag/query/answer_generator.py:_format_reference_list()`
+
+**Process**:
+1. Receives chunk IDs from retrieval pipeline
+2. For each chunk, retrieves Document and Page nodes via `graph.get_document()` and `graph.get_page()`
+3. Extracts metadata fields:
+   - Document: `document_title`, `issue_number`, `volume_number`, `document_date`, `publisher`
+   - Page: `page_number`, `publisher` (if different from document)
+4. Formats citation: `"{title} - Issue {issue}, Volume {volume} ({date}). p.{page}. {publisher}."`
+5. Strips `<orig>` tags from publisher text using `strip_orig_tags()` utility
+
+**Example Output**:
+```
+[1] Al-Kuwait Al-Youm Official Gazette - Issue 1733, Volume 71 (2025-04-06). p.1. Ministry of Information.
+```
+
+**Fallback Handling**:
+- If Document/Page nodes not found, falls back to chunk metadata (filename, page_number)
+- Ensures citations always generated even if metadata incomplete
+
+**Graph Adapter Methods**:
+- `get_document(document_id: str) -> Document`: Retrieves Document node with all metadata
+- `get_page(page_id: str) -> Page`: Retrieves Page node with page-level metadata
+
 ## Next Steps
 
-1. **Query Enhancement**: Update query pipeline to leverage page metadata for better citations
-2. **Table Queries**: Add support for querying table content specifically
-3. **Multilingual Queries**: Enhance query processing to handle `<orig>` multilingual content
-4. **Document Filtering**: Add query filters by document_type, issue_number, date range, etc.
+1. ✅ **Query Enhancement**: Query pipeline now leverages page metadata for rich citations
+2. ⏳ **Table Queries**: Add support for querying table content specifically
+3. ⏳ **Multilingual Queries**: Enhance query processing to handle `<orig>` multilingual content
+4. ⏳ **Document Filtering**: Add query filters by document_type, issue_number, date range, etc.
 
 ## Files Modified
 
@@ -328,6 +358,18 @@ python scripts/validate_sample_questions.py
 
 ✅ All implementation complete  
 ✅ All tests passing  
+✅ Rich metadata citations implemented  
 ✅ Backward compatible with existing markdown files  
 ✅ Ready for production use
+
+## Recent Updates (2025-01-XX)
+
+### Citation Format Enhancement ✅
+- **Implemented**: Rich metadata citations using Document and Page nodes
+- **Location**: `src/graph_rag/query/answer_generator.py:_format_reference_list()`
+- **Features**: 
+  - Retrieves metadata from graph nodes
+  - Formats Vancouver-style citations with title, issue, volume, date, page, publisher
+  - Strips `<orig>` tags for readability
+  - Graceful fallback to filename if metadata unavailable
 

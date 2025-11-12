@@ -208,16 +208,84 @@ sequenceDiagram
     Generator->>LLM: Prompt with chunks
     LLM-->>Generator: Answer with [1][2] markers
     Generator->>Generator: Format references
+    Generator->>Generator: Retrieve metadata from graph
+    Generator->>Generator: Format rich citations
     Generator-->>Orchestrator: Final answer + citations
 
     Orchestrator-->>User: Answer with Vancouver refs
 
     Note over Orchestrator: Each step logged as<br/>OrchestrationStep
+    Note over Generator: Citations use rich metadata<br/>from Document/Page nodes
 ```
+<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+read_file
 
 ---
 
-### 3. Knowledge Graph Structure
+### 3. Metadata Flow and Citation Generation
+
+```mermaid
+flowchart TD
+    subgraph "Ingestion: Metadata Extraction"
+        MD[Markdown File<br/>with XML tags]
+        PARSE[Source Parser<br/>parse_source_data]
+        DMETA[Document Metadata<br/>title, date, issue, volume]
+        PMETA[Page Metadata<br/>page_title, publisher, authors]
+        STORE[Graph Storage<br/>FalkorDB nodes]
+        
+        MD --> PARSE
+        PARSE --> DMETA
+        PARSE --> PMETA
+        DMETA --> STORE
+        PMETA --> STORE
+    end
+    
+    subgraph "Query: Citation Generation"
+        CHUNK[Chunk ID<br/>from retrieval]
+        GETDOC[Get Document Node<br/>graph.get_document]
+        GETPAGE[Get Page Node<br/>graph.get_page]
+        EXTRACT[Extract Metadata<br/>title, issue, volume, date]
+        FORMAT[Format Citation<br/>Vancouver style]
+        STRIP[Strip orig tags<br/>strip_orig_tags]
+        
+        CHUNK --> GETDOC
+        CHUNK --> GETPAGE
+        GETDOC --> EXTRACT
+        GETPAGE --> EXTRACT
+        EXTRACT --> FORMAT
+        FORMAT --> STRIP
+    end
+    
+    STORE -.->|Retrieved during| GETDOC
+    STORE -.->|Retrieved during| GETPAGE
+    
+    style DMETA fill:#e1f5ff
+    style PMETA fill:#e1f5ff
+    style FORMAT fill:#fff3e0
+```
+
+**Metadata Flow Details**:
+
+1. **Ingestion Phase**:
+   - `SourceParser` extracts metadata from `<document_metadata>` and `<page_metadata>` XML tags
+   - Metadata includes: `document_title`, `issue_number`, `volume_number`, `document_date`, `publisher`, `authors`
+   - Multilingual content parsed via `<orig>` tags (e.g., `"Kuwait Today <orig>الكويت اليوم</orig>"`)
+   - Metadata stored in FalkorDB Document and Page nodes
+
+2. **Query Phase**:
+   - `AnswerGenerator._format_reference_list()` receives chunk IDs from retrieval
+   - For each chunk, retrieves Document and Page nodes via `graph.get_document()` and `graph.get_page()`
+   - Extracts metadata fields: title, issue, volume, date, publisher
+   - Formats citation: `"{title} - Issue {issue}, Volume {volume} ({date}). p.{page}. {publisher}."`
+   - Strips `<orig>` tags from publisher text using `strip_orig_tags()` utility
+
+3. **Fallback Handling**:
+   - If Document/Page nodes not found, falls back to chunk metadata (filename, page_number)
+   - Ensures citations always generated even if metadata incomplete
+
+---
+
+### 4. Knowledge Graph Structure
 
 ```
 ASCII Representation of Graph Schema:

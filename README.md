@@ -133,18 +133,43 @@ Query: Parse → Link → Retrieve → Traverse → Rerank → Generate
 
 ## Citation Format
 
-The system generates Vancouver-style citations:
+The system generates **Vancouver-style citations** using rich metadata extracted from documents:
 
+### Example Citation
+
+**Before** (filename-based):
+```
+[1] 6-4-2025_en.md. p.1.
+```
+
+**After** (rich metadata):
 ```
 [1] Al-Kuwait Al-Youm Official Gazette - Issue 1733, Volume 71 (2025-04-06). p.1. Ministry of Information.
 ```
 
-Citations include:
-- Document title
-- Volume and issue numbers
-- Publication date
-- Page number
-- Publisher
+### Citation Components
+
+Citations include the following metadata fields:
+- **Document title**: Full title from `document_metadata.document_title`
+- **Issue number**: Gazette issue number (e.g., "Issue 1733")
+- **Volume number**: Publication volume (e.g., "Volume 71")
+- **Publication date**: ISO 8601 date format (e.g., "2025-04-06")
+- **Page number**: Page reference (e.g., "p.1")
+- **Publisher**: Publisher name (with `<orig>` tags stripped for readability)
+
+### How Citations Work
+
+1. **Metadata Extraction**: During ingestion, document and page metadata are parsed from XML tags (`<document_metadata>`, `<page_metadata>`)
+2. **Graph Storage**: Metadata is stored in FalkorDB graph nodes (Document and Page nodes)
+3. **Citation Generation**: When generating answers, `AnswerGenerator._format_reference_list()` retrieves Document and Page nodes from the graph
+4. **Formatting**: Citations are formatted using the retrieved metadata, with graceful fallback to filename if metadata is unavailable
+
+### Multilingual Support
+
+The system handles multilingual content via `<orig>` tags:
+- Publisher names like `"Kuwait Today <orig>الكويت اليوم</orig>"` are parsed
+- Citations display only the primary language text (e.g., "Kuwait Today")
+- Original language text is preserved in graph metadata for future use
 
 ## Configuration
 

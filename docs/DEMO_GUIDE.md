@@ -5,31 +5,39 @@
 ## Quick Start (5 Minutes)
 
 ```bash
-# 1. Ensure you have the graph built
-make status
+# 1. Ensure FalkorDB is running
+make falkordb-status
 
-# 2. Run quick demo with 7 questions
-make demo-quick
+# 2. Ingest documents (if not done)
+make ingest-fast
 
-# 3. View results
-cat output/eval_7_report.txt
+# 3. Run demo
+make demo
+
+# 4. View results
+cat answers.json
 ```
 
 ## Full Demo Workflow (30 Minutes)
 
 ```bash
-# 1. Setup Llama 3.3 70B (one-time, ~40GB download)
-make setup-llm-demo
+# 1. Start FalkorDB
+make falkordb-start
 
-# 2. Update model in src/config.py
-# Change: model_name = "llama3.3:70b-instruct-q4_K_M"
+# 2. Install dependencies (if needed)
+make install-uv
 
-# 3. Run full demo
+# 3. Ingest documents
+make ingest
+
+# 4. Run demo (processes questions and generates answers.json)
 make demo
 
-# 4. Review results
-cat output/eval_7_report.txt   # Quick validation (7 questions)
-cat output/eval_70_report.txt  # Comprehensive test (70 questions)
+# 5. Review results
+cat answers.json
+
+# 6. Evaluate answers (optional)
+make evaluate QUESTIONS=data/sample_questions.json ANSWERS=answers.json
 ```
 
 ## LLM Model Comparison
@@ -60,66 +68,74 @@ cat output/eval_70_report.txt  # Comprehensive test (70 questions)
 ### 1. Environment Setup
 
 ```bash
-# Check current status
-make status
+# Check FalkorDB status
+make falkordb-status
+
+# Start FalkorDB if not running
+make falkordb-start
 
 # Install dependencies if needed
-make install-dev
+make install-uv
 
-# Verify Ollama is running
+# Verify Ollama is running (if using local LLM)
 ollama list
 ```
 
-### 2. Build Knowledge Graph (if not done)
+### 2. Build Knowledge Graph
 
 ```bash
-# Build from all documents in data/source_data/
-make build-full
+# Ingest all documents from data/source_data/
+make ingest
 
-# This will process ~70 documents and create:
-# - output/graph.pkl (knowledge graph)
+# For fast testing with single file:
+make ingest-fast
+
+# This will process documents and create:
+# - FalkorDB graph (in Docker container)
 # - output/embeddings.npy (semantic embeddings)
 # - output/bm25.pkl (BM25 index)
+# - output/chunks.json (chunk metadata)
 ```
 
-### 3. Generate Test Questions
+### 3. Generate Test Questions (Optional)
 
 ```bash
-# Generate 7-question quick test
-make generate-questions-7
+# Generate test questions using script
+python scripts/generate_test_questions.py --count 400 --output data/test_questions_400.json
 
-# Generate 70-question comprehensive test
-make generate-questions-70
-
-# Questions are saved to:
-# - data/questions_7.json
-# - data/questions_70.json
+# Or use existing sample questions
+# - data/sample_questions.json (2 questions)
 ```
 
-### 4. Run Evaluation
+### 4. Run Queries
 
 ```bash
-# Quick evaluation (7 questions, ~2 minutes)
-make evaluate-7
+# Query with single question
+make query Q="What is Decree-Law No. 61?"
 
-# Comprehensive evaluation (70 questions, ~20 minutes)
-make evaluate-70
+# Query from JSON file
+make query-file FILE=data/sample_questions.json
 
-# Results saved to:
-# - output/eval_7.json (detailed scores)
-# - output/eval_7_report.txt (human-readable summary)
-# - output/eval_70.json
-# - output/eval_70_report.txt
+# Results saved to answers.json
 ```
 
-### 5. Benchmark Ingestion (Optional)
+### 5. Evaluate Answers (Optional)
 
 ```bash
-# Benchmark document processing performance
-make benchmark-ingestion
+# Evaluate answers using LLM-as-judge
+make evaluate QUESTIONS=data/sample_questions.json ANSWERS=answers.json
 
-# Results saved to:
-# - output/benchmarks/ingestion_benchmark.json
+# Results saved to evaluation_results.json
+```
+
+### 6. Benchmark Performance (Optional)
+
+```bash
+# Run performance benchmark
+python scripts/benchmark_performance.py --count 400
+
+# Or with questions file
+python scripts/benchmark_performance.py --questions-file data/test_questions_400.json
 ```
 
 ## Demo Talking Points
@@ -166,51 +182,52 @@ make benchmark-ingestion
 
 1. **Show Current Status**:
    ```bash
-   make status
+   make falkordb-status
+   make validate-graph
    ```
-   - Highlight: X documents processed, graph built, test sets ready
+   - Highlight: Graph structure, node/edge counts, system ready
 
-2. **Run Quick Evaluation**:
+2. **Run Query Processing**:
    ```bash
-   make evaluate-7
+   make query-file FILE=data/sample_questions.json
    ```
-   - Show: Real-time evaluation on 7 questions (~2 minutes)
-   - Highlight: Detailed scores, citations, answer quality
+   - Show: Real-time query processing with progress bar
+   - Highlight: Parallel processing, answer generation
 
 3. **Review Results**:
    ```bash
-   cat output/eval_7_report.txt
+   cat answers.json
    ```
-   - Walk through: Mean score, pass rate, metric breakdown
+   - Walk through: Answer format, citations, Vancouver-style references
    - Emphasize: Faithfulness (no hallucinations), citation accuracy
 
 4. **Show Example Question/Answer**:
    ```bash
-   cat output/eval_7.json | jq '.results[0]'
+   cat answers.json | python3 -m json.tool
    ```
    - Demonstrate: Question → Context retrieval → Answer with citations
-   - Highlight: Vancouver-style legal citations
+   - Highlight: Vancouver-style legal citations with rich metadata
 
 5. **Discuss Architecture**:
-   - Explain: Hybrid retrieval (BM25 + embeddings)
-   - Show: Graph enhancement, cross-encoder reranking
-   - Emphasize: Privacy (all local, no cloud calls)
+   - Explain: Hybrid retrieval (FAISS + BM25 + RRF)
+   - Show: Graph traversal, document-aware BFS
+   - Emphasize: Privacy (all local, no cloud calls if using Ollama)
 
-6. **Performance Comparison**:
-   - Current: Llama 3.1 8B baseline
-   - Demo: Llama 3.3 70B upgrade
-   - Future: Optimization roadmap (fusion tuning)
+6. **Performance Metrics**:
+   - Throughput: ~14 questions/minute (parallel)
+   - Target: 400 questions in ≤60 minutes
+   - Accuracy: >95% target across evaluation dimensions
 
 ## Troubleshooting
 
-### Issue: Questions generation fails
+### Issue: Graph not found
 
 ```bash
-# Check if graph exists
-ls -lh output/graph.pkl
+# Check if graph is populated
+make validate-graph
 
-# If not, rebuild:
-make build-full
+# If empty, rebuild:
+make ingest
 ```
 
 ### Issue: Ollama not responding
@@ -233,37 +250,37 @@ brew services restart ollama
 # Change: model_name = "llama3.1:latest"
 ```
 
-### Issue: Evaluation taking too long
+### Issue: Query processing taking too long
 
 ```bash
-# Use 7-question test instead of 70
-make evaluate-7
+# Use smaller question set
+python main.py query --file data/sample_questions.json --no-parallel
 
-# Or sample from existing questions
-head -n 10 data/questions_70.json > data/questions_10.json
+# Or reduce concurrent queries in config
+# Edit src/graph_rag/config.py: max_concurrent = 64
 ```
 
 ## Next Steps After Demo
 
-1. **Optimize Retrieval Parameters**:
+1. **Run Performance Benchmark**:
    ```bash
-   make quick-optimize  # 50-question validation
-   make full-optimize   # 400-question full optimization
+   python scripts/benchmark_performance.py --count 400
    ```
 
-2. **Fine-Tune Fusion Weight**:
-   - Test alpha values: 0.3, 0.5, 0.7
-   - Optimize for semantic vs keyword balance
+2. **Fine-Tune Configuration**:
+   - Edit `src/graph_rag/config.py` for retrieval parameters
+   - Test fusion_k values: 40, 60, 80
+   - Adjust max_concurrent for your system
 
-3. **Validate on Full 400-Question Set**:
+3. **Evaluate Answers**:
    ```bash
-   make benchmark
+   make evaluate QUESTIONS=data/sample_questions.json ANSWERS=answers.json
    ```
 
 4. **Consider Alternative LLMs**:
-   - GPT-4o-mini (API): Best quality, requires API key
-   - Claude 3.5 Haiku (API): Fast, accurate, good citations
-   - Llama 3.3 70B (local): Good balance of quality and privacy
+   - Ollama (local): llama3.1:8b, llama3.3:70b
+   - Anthropic API: Claude 3.5 Sonnet (set ANTHROPIC_API_KEY)
+   - Configure in `.env` file
 
 ## Success Criteria
 
@@ -285,7 +302,7 @@ head -n 10 data/questions_70.json > data/questions_10.json
 ## Resources
 
 - **Makefile**: `make help` - All available commands
-- **Configuration**: `src/config.py` - Tunable parameters
-- **Manual Execution**: `docs/MANUAL_EXECUTION_GUIDE.md` - Tmux workflows
-- **Baseline Findings**: `docs/BASELINE_FINDINGS.md` - Analysis and insights
-- **Completion Summary**: `docs/COMPLETION_SUMMARY.md` - Project status
+- **Configuration**: `src/graph_rag/config.py` - Tunable parameters
+- **Demo Instructions**: `DEMO_INSTRUCTIONS.md` - Step-by-step demo runbook
+- **Technical Note**: `TECHNICAL_NOTE.md` - Architecture overview
+- **Quick Reference**: `docs/QUICK_REFERENCE.md` - Quick command reference

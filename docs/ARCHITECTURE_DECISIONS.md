@@ -265,11 +265,11 @@ Separate ingestion into two phases:
 
 ### Implementation
 ```bash
-# Fast path (production):
-make fast-ingest  # 47 seconds
+# Fast testing (single file):
+make ingest-fast  # ~30-60 seconds
 
-# Enhanced path (optional):
-make fast-ingest && make enhance-graph  # 47s + 3 minutes
+# Full ingestion (all documents):
+make ingest  # ~25-30 minutes (with batch optimizations)
 ```
 
 ### Trade-offs
@@ -284,9 +284,9 @@ make fast-ingest && make enhance-graph  # 47s + 3 minutes
 ✅ **OPTIMIZED** - Selectivity-based filtering prevents "hub" entities (e.g., "Kuwait" linked to everything)
 
 ### Code Location
-- `scripts/fast_ingest.py`: Fast path implementation
-- `scripts/enhance_graph.py`: Entity enhancement (optional)
-- `src/ingest/faiss_resolver.py`: FAISS-optimized entity resolution
+- `src/graph_rag/ingest/pipeline.py`: Main ingestion pipeline
+- `src/graph_rag/ingest/faiss_resolver.py`: FAISS-optimized entity resolution (batched)
+- `src/graph_rag/graph/falkordb_adapter.py`: Batch edge creation (`create_edges_batch`)
 
 ---
 

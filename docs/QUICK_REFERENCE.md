@@ -1,7 +1,8 @@
 # Ingestion Pipeline - Quick Reference Guide
 
-## The Problem
-Standard ingestion takes **90-120 minutes** for 400 documents because **Stage 4: Entity Resolution** consumes **95% of time**.
+## Current Implementation
+
+The system uses a **standard ingestion pipeline** with optimized batch processing for entity resolution and edge creation.
 
 ```
 Why Entity Resolution is Slow:
@@ -13,57 +14,39 @@ Why Entity Resolution is Slow:
 
 ---
 
-## The Solution: fast_ingest.py
+## Ingestion Commands
 
-**Instead of:** Parse → Chunk → Extract → **Resolve** → Relationships → Graph (95 min)
+**Full ingestion** (all documents):
+```bash
+make ingest
+# Processes all documents in data/source_data/
+```
 
-**Do:** Parse → Chunk → Graph (1.5 min) ✓
-
-**Speedup: 75x faster** (95 min → 1.5 min)
+**Fast testing** (single file):
+```bash
+make ingest-fast
+# Processes single file from data/fast_data/ for quick testing
+```
 
 ### What You Get
 ✓ Document-based chunks with embeddings  
 ✓ Full BM25 sparse retrieval index  
-✓ Document structure (Articles → Sections → Clauses)  
+✓ FAISS dense retrieval index  
+✓ Entity extraction and resolution (FAISS-based deduplication)  
+✓ Entity relationships (co-occurrence)  
+✓ Knowledge graph in FalkorDB  
 ✓ Semantic search working perfectly  
 
-### What You Lose
-✗ Entity deduplication (Party A vs. Licensor)  
-✗ Entity nodes in graph  
-✗ Entity mentions tracking  
-✗ Direct entity-entity relationships  
-
 ---
 
-## When to Use What
+## Ingestion Pipeline Stages
 
-| Use Case | Approach |
-|----------|----------|
-| "Find documents about X" | fast_ingest (1.5 min) ✓ |
-| "What is similar to Y?" | fast_ingest (1.5 min) ✓ |
-| "Extract all parties" | standard pipeline (95 min) |
-| "Relationship between Party A and B?" | standard pipeline (95 min) |
-| "Get me answer + entity context" | hybrid (1.5 min + on-demand) |
-
----
-
-## The Hybrid Approach (To Be Implemented)
-
-**Best of both worlds:**
-
-```
-1. Start: fast_ingest (1.5 min) → chunks + BM25 ready immediately
-2. Query comes in: Retrieve chunks (instant)
-3. If query needs entities → Extract entities from retrieved chunks
-4. Resolve ONLY those entities (100s, not 70K!)
-5. Return enhanced answer with entity context
-```
-
-**Benefits:**
-- Fast ingestion (1.5 min)
-- Query-time entity resolution (only when needed)
-- Small entity set (10-100, not 70K)
-- Entity resolution time: 0.1-1 sec per query instead of 95 min upfront
+1. **Parse Documents** - Extract metadata and content
+2. **Chunk Content** - Split into semantic chunks (512 tokens, 128 overlap)
+3. **Extract Entities** - spaCy NER + regex patterns
+4. **Resolve Entities** - FAISS-based deduplication (batched for performance)
+5. **Extract Relationships** - Co-occurrence model
+6. **Build Graph** - Create nodes and edges in FalkorDB (batched edge creation)
 
 ---
 
@@ -86,7 +69,7 @@ Why Entity Resolution is Slow:
 │                                                                   │
 └─────────────────────────────────────────────────────────────────┘
 
-fast_ingest skips [3] [4] [5] entirely!
+Current implementation includes all stages with optimized batch processing.
 ```
 
 ---
@@ -106,23 +89,17 @@ Edges: ~150,000+
   • RELATED_TO: entity ↔ entity (78,000+)
 ```
 
-### fast_ingest Graph
+### Current Graph Structure
 ```
-Nodes: ~2,000
-  • 1 document node
-  • ~2,000 chunk nodes
-  • 0 entity nodes
-
-Edges: ~2,000
-  • PART_OF: chunk → document (2,000)
-  • MENTIONS: (none - no entities)
-  • RELATED_TO: (none - no entities)
-```
-
-### Hybrid Graph (Proposed)
-```
-Phase 1: Same as fast_ingest
-Phase 2: Add entities on demand when queried
+Nodes: Documents, Pages, Chunks, Entities
+Edges: 
+  • PART_OF: chunk → document
+  • DOCUMENT_HAS_PAGE: document → page
+  • PAGE_HAS_CHUNK: page → chunk
+  • MENTIONS: chunk → entity (batched creation)
+  • RELATED_TO: entity ↔ entity (batched creation)
+  • DOCUMENT_PUBLISHED_BY: document → publisher entity
+  • PAGE_AUTHORED_BY: page → author entity
 ```
 
 ---
@@ -182,120 +159,114 @@ TOTAL: ~7400s (124 min... but observed ~5400s with optimizations)
 
 ## Files Involved in Ingestion
 
-### Core Pipeline (95 min)
-- `src/rag_pipeline.py` - orchestrator (stages 1-6)
-- `src/ingest/parser.py` - stage 1: parse (fast)
-- `src/ingest/chunker.py` - stage 2: chunk (fast)
-- `src/ingest/entity_extractor.py` - stage 3: extract (moderate)
-- `src/ingest/entity_resolver.py` - stage 4: resolve ⚠️ SLOW
-- `src/ingest/relation_extractor.py` - stage 5: relationships (fast)
-- `src/ingest/graph_builder.py` - stage 6: build graph (fast)
-
-### Fast Alternative (1.5 min)
-- `scripts/fast_ingest.py` - skip stages 3-5, build chunk-only graph
+### Core Pipeline
+- `src/graph_rag/ingest/pipeline.py` - orchestrator (stages 1-6)
+- `src/graph_rag/ingest/source_parser.py` - stage 1: parse (fast)
+- `src/graph_rag/ingest/chunker.py` - stage 2: chunk (fast)
+- `src/graph_rag/ingest/entity_extractor.py` - stage 3: extract (moderate)
+- `src/graph_rag/ingest/faiss_resolver.py` - stage 4: resolve (batched, optimized)
+- `src/graph_rag/ingest/relation_extractor.py` - stage 5: relationships (fast)
+- `src/graph_rag/ingest/graph_builder.py` - stage 6: build graph (batched edge creation)
 
 ### Support Files
-- `src/models.py` - Entity, Chunk, Relationship classes
-- `src/config.py` - configuration (thresholds, model names)
-- `src/utils/embeddings.py` - embedding model wrapper
-- `src/ingest/rdf_exporter.py` - RDF export
+- `src/graph_rag/models.py` - Entity, Chunk, Relationship classes
+- `src/graph_rag/config.py` - configuration (thresholds, model names)
+- `src/graph_rag/utils/embeddings.py` - embedding model wrapper
+- `src/graph_rag/graph/falkordb_adapter.py` - FalkorDB graph operations
 
 ---
 
 ## Optimization Strategies
 
-### Immediate (No code changes needed)
-- Use `fast_ingest.py` for rapid iteration
-- Reduces feedback loop: 95 min → 1.5 min
+### Current Optimizations
+- **Batch edge creation**: 1000 edges per batch (significantly faster)
+- **FAISS batch processing**: Entity resolution in batches of 10K
+- **Parallel file processing**: Async processing with configurable workers
+- **Progress indicators**: Real-time feedback during ingestion
 
-### Short-term (Medium effort)
-1. **Lazy Entity Resolution** (Option A)
-   - Detect entity mentions in query
-   - Resolve only relevant entities (10-100, not 70K)
-   - Entity resolution time: <1s instead of 95 min upfront
+### Performance Improvements
+- Entity resolution: Batched FAISS similarity search
+- Edge creation: Batch Cypher queries (1000 edges per query)
+- File processing: Parallel async processing (up to 8 workers)
 
-2. **Incremental Ingestion** (Option B)
-   - fast_ingest immediately (1.5 min)
-   - Entity resolution in background
-   - Seamless upgrade when background completes
-
-3. **Two-Phase Ingestion** (Option C)
-   - Phase 1: fast_ingest (1.5 min, return to user)
-   - Phase 2: enhance with entities (background, user can skip)
-
-### Medium-term (Advanced)
-- FAISS for approximate nearest neighbor search in embeddings
+### Future Optimizations
 - GPU acceleration for embedding computation
 - Distributed resolution across multiple machines
 - Streaming ingestion (one document at a time)
+- Query-time entity resolution for specific queries
 
 ---
 
-## Recommended Next Steps
+## Recommended Usage
 
-### For Fast Results Now
+### For Fast Testing
 ```bash
-# Use fast_ingest.py instead of standard pipeline
-python scripts/fast_ingest.py \
-  --input /path/to/documents \
-  --output /path/to/graph.pkl
+# Use single-file ingestion for quick iteration
+make ingest-fast
 ```
 
-Expected time: ~1.5 minutes for 400 documents
+Expected time: ~30-60 seconds for single file
 
-### For Production (Hybrid Approach)
-1. Implement Option A: Lazy Entity Resolution
-   - Extract entities only from retrieved chunks
-   - Resolve only those entities
-   - Query-time entity context
+### For Full Ingestion
+```bash
+# Ingest all documents
+make ingest
+```
 
-2. Add entity detection heuristics
-   - Recognize when query asks about entities
-   - Example: "Who is the licensor?" → detect PARTY entity
+Expected time: ~25-30 minutes for 60 documents (with batch optimizations)
 
-3. Fall back to chunk-only answers for non-entity queries
+### For Production
+1. Use batch optimizations (already implemented)
+2. Monitor performance with `scripts/benchmark_performance.py`
+3. Adjust `max_concurrent` and `query_batch_size` in config as needed
 
 ---
 
 ## Key Metrics
 
 ```
-STANDARD PIPELINE:
-  Total Time:    95 minutes
-  Bottleneck:    Entity Resolution (5400s = 90 minutes)
-  % in bottleneck: 97%
+CURRENT PIPELINE (with optimizations):
+  Total Time:    ~25-30 minutes (60 documents)
+  Entity Resolution: Batched FAISS (optimized)
+  Edge Creation: Batched Cypher queries (1000 per batch)
+  File Processing: Parallel async (8 workers)
 
-FAST_INGEST:
-  Total Time:    1.5 minutes
-  Speedup:       75x faster
+PERFORMANCE BREAKDOWN:
+  - File parsing: ~5-10 seconds (parallel)
+  - Entity resolution: ~5-10 minutes (batched)
+  - Edge creation: ~2-5 minutes (batched)
+  - Index building: ~1-2 minutes
 
-HYBRID (PROPOSED):
-  Ingestion:     1.5 minutes (fast_ingest)
-  Query 1:       0.1s (no entities)
-  Query 2:       0.5s + 0.1s (with entity resolution)
-  
-  vs. standard:  95 min ingestion + multiple fast queries
-                 STILL FAR BETTER
+QUERY PROCESSING:
+  - Single query: ~4-5 seconds
+  - Parallel (400 queries): ~28-34 minutes
+  - Target: ≤60 minutes for 400 questions
 ```
 
 ---
 
-## Decision Matrix
+## Commands Reference
 
-Choose your approach based on use case:
+```bash
+# Ingestion
+make ingest              # Ingest all documents
+make ingest-fast         # Fast test with single file
 
-```
-┌──────────────────────────┬──────────┬──────────────┬────────────┐
-│ Use Case                 │ Standard │ fast_ingest  │ Hybrid     │
-├──────────────────────────┼──────────┼──────────────┼────────────┤
-│ Need entity dedup?       │ Yes      │ No           │ On-demand  │
-│ Ingestion time           │ 95 min   │ 1.5 min      │ 1.5 min    │
-│ Can wait for prep?       │ No       │ Yes          │ Yes        │
-│ Query entity mentions?   │ Yes      │ No           │ Yes        │
-│ Entity extraction q/a    │ Yes      │ No           │ Limited    │
-│ Relationship queries?    │ Yes      │ No           │ Limited    │
-│ Complexity to build      │ Done     │ Done         │ Medium     │
-└──────────────────────────┴──────────┴──────────────┴────────────┘
+# Querying
+make query Q="question"  # Single question
+make query-file FILE=... # From JSON file
+
+# Validation
+make validate-graph      # Check graph structure
+
+# Services
+make falkordb-start     # Start FalkorDB
+make falkordb-status     # Check status
+make falkordb-stop       # Stop FalkorDB
+
+# Testing
+make test                # Run tests
+make demo                # Run complete demo
 ```
 
 ---
