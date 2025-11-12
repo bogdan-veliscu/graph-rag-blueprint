@@ -7,7 +7,11 @@ from typing import Literal
 
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env file from project root (where main.py is located)
+# This ensures .env is found regardless of where Python is invoked from
+project_root = Path(__file__).parent.parent.parent
+env_file = project_root / ".env"
+load_dotenv(dotenv_path=env_file, override=False)  # override=False: env vars take precedence
 
 
 @dataclass

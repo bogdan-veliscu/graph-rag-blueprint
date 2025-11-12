@@ -108,12 +108,24 @@ class LLMClient:
         Returns:
             Generated text
         """
+        # Check both config and environment variable (in case load_dotenv didn't work)
+        import os
+        from pathlib import Path
+        api_key = config.anthropic_api_key or os.getenv("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            env_file_path = Path(__file__).parent.parent.parent / ".env"
+            raise ValueError(
+                "ANTHROPIC_API_KEY not set.\n"
+                f"Please set it in your .env file ({env_file_path}) or as an environment variable.\n"
+                f"Example: echo 'ANTHROPIC_API_KEY=your-key-here' >> .env"
+            )
+        # Use the found API key
         if not config.anthropic_api_key:
-            raise ValueError("ANTHROPIC_API_KEY not set")
+            config.anthropic_api_key = api_key
 
         url = config.anthropic_base_url
         headers = {
-            "x-api-key": config.anthropic_api_key,
+            "x-api-key": api_key,
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
         }

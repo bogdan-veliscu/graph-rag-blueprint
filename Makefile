@@ -22,28 +22,24 @@ install-uv: ## Install dependencies using uv (recommended)
 	@echo "Installation complete!"
 
 ingest: ## Ingest documents from data/source_data/
-	@if [ -f .env ]; then set -a; . .env; set +a; fi; \
-	python3 main.py ingest data/source_data/
+	@bash -c 'if [ -f .env ]; then set -a; . .env; set +a; fi; python3 main.py ingest data/source_data/'
 
 ingest-fast: ## Ingest a single file for fast testing (default: data/fast_data/2024-12-12_en.md)
-	@if [ -f .env ]; then set -a; . .env; set +a; fi; \
-	python3 main.py ingest data/fast_data/
+	@bash -c 'if [ -f .env ]; then set -a; . .env; set +a; fi; python3 main.py ingest data/fast_data/'
 
 query: ## Query with a single question (usage: make query Q="your question")
 	@if [ -z "$(Q)" ]; then \
 		echo "Usage: make query Q='your question here'"; \
 		exit 1; \
 	fi
-	@if [ -f .env ]; then set -a; . .env; set +a; fi; \
-	python3 main.py query "$(Q)"
+	@bash -c 'if [ -f .env ]; then set -a; . .env; set +a; fi; python3 main.py query "$(Q)"'
 
 query-file: ## Query from a JSON file (usage: make query-file FILE=data/sample_questions.json)
 	@if [ -z "$(FILE)" ]; then \
 		echo "Usage: make query-file FILE=data/sample_questions.json"; \
 		exit 1; \
 	fi
-	@if [ -f .env ]; then set -a; . .env; set +a; fi; \
-	python3 main.py query --file $(FILE) --output answers.json
+	@bash -c 'if [ -f .env ]; then set -a; . .env; set +a; fi; python3 main.py query --file $(FILE) --output answers.json'
 
 test: ## Run all tests
 	python3 -m pytest tests/ -v
@@ -53,8 +49,7 @@ evaluate: ## Evaluate answers (usage: make evaluate QUESTIONS=data/questions.jso
 		echo "Usage: make evaluate QUESTIONS=data/questions.json ANSWERS=answers.json"; \
 		exit 1; \
 	fi
-	@if [ -f .env ]; then set -a; . .env; set +a; fi; \
-	python3 scripts/evaluate.py --questions $(QUESTIONS) --answers $(ANSWERS) --output evaluation_results.json
+	@bash -c 'if [ -f .env ]; then set -a; . .env; set +a; fi; python3 scripts/evaluate.py --questions $(QUESTIONS) --answers $(ANSWERS) --output evaluation_results.json'
 
 lint: ## Run linting checks
 	@echo "Running ruff..."
@@ -67,16 +62,13 @@ format: ## Format code with black and ruff
 	ruff check --fix src/ tests/ main.py scripts/
 
 demo: ## Run complete demo (ingest + process ~400 questions)
-	@if [ -f .env ]; then set -a; . .env; set +a; fi; \
-	python3 scripts/run_demo.py
+	@bash -c 'if [ -f .env ]; then set -a; . .env; set +a; fi; python3 scripts/run_demo.py'
 
 demo-skip-ingest: ## Run demo skipping ingestion (for testing queries only)
-	@if [ -f .env ]; then set -a; . .env; set +a; fi; \
-	python3 scripts/run_demo.py --skip-ingest
+	@bash -c 'if [ -f .env ]; then set -a; . .env; set +a; fi; python3 scripts/run_demo.py --skip-ingest'
 
 validate-graph: ## Validate graph structure after ingestion
-	@if [ -f .env ]; then set -a; . .env; set +a; fi; \
-	python3 scripts/validate_graph.py
+	@bash -c 'if [ -f .env ]; then set -a; . .env; set +a; fi; python3 scripts/validate_graph.py'
 
 clean: ## Clean generated files
 	rm -rf output/
