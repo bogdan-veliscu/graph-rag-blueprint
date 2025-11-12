@@ -160,14 +160,31 @@ class AsyncLLMClient:
                     response = await client.post(url, headers=headers, json=payload)
                     response.raise_for_status()
                     result = response.json()
-                    answer = result.get("content", [{}])[0].get("text", "")
-                    if not answer:
-                        logger.warning(f"Anthropic returned empty response (attempt {attempt + 1}/{max_retries})")
+                    
+                    # Debug: log response structure if empty
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"Anthropic API response: {result}")
+                    
+                    # Parse response - Anthropic API returns content as array of content blocks
+                    content = result.get("content", [])
+                    if not content:
+                        logger.warning(f"Anthropic returned empty content array (attempt {attempt + 1}/{max_retries})")
                         if attempt < max_retries - 1:
                             await asyncio.sleep(1)  # Brief delay before retry
                             continue
-                        # After all retries, return error message instead of empty string
-                        raise ValueError("Anthropic API returned empty response after all retries")
+                        raise ValueError("Anthropic API returned empty content array after all retries")
+                    
+                    # Extract text from first content block
+                    first_block = content[0] if isinstance(content, list) else content
+                    answer = first_block.get("text", "") if isinstance(first_block, dict) else str(first_block)
+                    
+                    if not answer:
+                        logger.warning(f"Anthropic returned empty text in content block (attempt {attempt + 1}/{max_retries}). Response structure: {result}")
+                        if attempt < max_retries - 1:
+                            await asyncio.sleep(1)  # Brief delay before retry
+                            continue
+                        raise ValueError(f"Anthropic API returned empty text after all retries. Response: {result}")
+                    
                     return answer
             except httpx.TimeoutException as e:
                 logger.warning(f"Anthropic timeout (attempt {attempt + 1}/{max_retries}): {e}")
@@ -179,7 +196,6 @@ class AsyncLLMClient:
                 elif e.response.status_code == 429:
                     logger.warning(f"Rate limited (attempt {attempt + 1}/{max_retries})")
                     if attempt < max_retries - 1:
-                        import asyncio
                         await asyncio.sleep(2 ** attempt)  # Exponential backoff
                         continue
                 logger.error(f"Anthropic HTTP error: {e}")
