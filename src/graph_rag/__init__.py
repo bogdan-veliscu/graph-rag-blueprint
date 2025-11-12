@@ -1,0 +1,4 @@
+"""GraphRAG system for legal document question-answering."""
+
+__version__ = "0.1.0"
+

@@ -1,0 +1,49 @@
+# Git ignore file
+
+# Temporary files and scratchpad
+scratchpad/
+*.tmp
+*.temp
+*.log
+*.cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.venv/
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables (NEVER commit!)
+.env
+.env.local
+.env.*.local
+# Note: .env.example should be committed (it's a template without secrets)
+
+# Project specific
+output/
+*.npy
+*.pkl
+answers.json
