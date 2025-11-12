@@ -257,10 +257,10 @@ if __name__ == "__main__":
         answers = query(questions, output_path=args.output, parallel=not args.no_parallel)
 
         # Print summary table with per-question details
-        summary_table = Table(title="Query Summary", show_header=True, header_style="bold cyan")
-        summary_table.add_column("No.", style="cyan", width=5, justify="right")
-        summary_table.add_column("Question (first 100 chars)", style="yellow", width=50, overflow="fold")
-        summary_table.add_column("Answer (first 200 chars)", style="green", width=70, overflow="fold")
+        summary_table = Table(title="Query Summary", show_header=True, header_style="bold cyan", show_lines=False)
+        summary_table.add_column("No.", style="cyan", width=6, justify="right", no_wrap=True)
+        summary_table.add_column("Question (first 100 chars)", style="yellow", min_width=40, max_width=60, overflow="fold")
+        summary_table.add_column("Answer (first 200 chars)", style="green", min_width=50, max_width=80, overflow="fold")
         
         # Truncate function
         def truncate(text: str, max_len: int) -> str:
