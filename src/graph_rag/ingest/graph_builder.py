@@ -4,9 +4,9 @@ from typing import Dict, List
 
 from sentence_transformers import SentenceTransformer
 
-from src.graph_rag.config import config
-from src.graph_rag.graph.falkordb_adapter import FalkorDBAdapter
-from src.graph_rag.models import (
+from graph_rag.config import config
+from graph_rag.graph.falkordb_adapter import FalkorDBAdapter
+from graph_rag.models import (
     Chunk,
     Document,
     EdgeType,

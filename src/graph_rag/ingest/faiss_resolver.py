@@ -6,8 +6,8 @@ from typing import List
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-from src.graph_rag.config import config
-from src.graph_rag.models import Entity
+from graph_rag.config import config
+from graph_rag.models import Entity
 
 logger = logging.getLogger(__name__)
 

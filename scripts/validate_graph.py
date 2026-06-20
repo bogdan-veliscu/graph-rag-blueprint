@@ -12,7 +12,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.graph_rag.graph.falkordb_adapter import FalkorDBAdapter
+from graph_rag.graph.falkordb_adapter import FalkorDBAdapter
 
 logging.basicConfig(level=logging.WARNING)  # Suppress INFO logs, only show errors
 logger = logging.getLogger(__name__)

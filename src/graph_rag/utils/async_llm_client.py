@@ -8,7 +8,7 @@ from typing import Optional
 
 import httpx
 
-from src.graph_rag.config import config
+from graph_rag.config import config
 
 logger = logging.getLogger(__name__)
 

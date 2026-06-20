@@ -2,8 +2,8 @@
 
 from typing import List, Optional
 
-from src.graph_rag.graph.falkordb_adapter import FalkorDBAdapter
-from src.graph_rag.models import Entity, NodeType
+from graph_rag.graph.falkordb_adapter import FalkorDBAdapter
+from graph_rag.models import Entity, NodeType
 
 
 class EntityLinker:

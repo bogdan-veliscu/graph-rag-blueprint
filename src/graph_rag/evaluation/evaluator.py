@@ -4,7 +4,7 @@ import json
 import logging
 from typing import Dict, List, Optional
 
-from src.graph_rag.utils.llm_client import LLMClient
+from graph_rag.utils.llm_client import LLMClient
 
 logger = logging.getLogger(__name__)
 

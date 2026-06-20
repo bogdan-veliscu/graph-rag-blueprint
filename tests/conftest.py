@@ -7,7 +7,7 @@ from typing import Generator
 
 import pytest
 
-from src.graph_rag.models import Document, Page
+from graph_rag.models import Document, Page
 
 
 @pytest.fixture

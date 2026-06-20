@@ -9,7 +9,7 @@ from typing import Optional
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.graph_rag.evaluation.evaluator import Evaluator
+from graph_rag.evaluation.evaluator import Evaluator
 
 logging.basicConfig(
     level=logging.INFO,

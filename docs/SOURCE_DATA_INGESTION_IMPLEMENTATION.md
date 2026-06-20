@@ -246,7 +246,7 @@ pipeline.ingest_documents([Path("data/source_data/2025-04-09_en.md")])
 ### Manual Parsing
 
 ```python
-from src.graph_rag.ingest.source_parser import parse_source_data
+from graph_rag.ingest.source_parser import parse_source_data
 
 parsed = parse_source_data(Path("data/source_data/2025-04-09_en.md"))
 print(f"Document ID: {parsed.document_metadata.document_id}")

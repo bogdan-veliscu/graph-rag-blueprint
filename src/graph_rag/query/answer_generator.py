@@ -3,10 +3,10 @@
 import re
 from typing import List
 
-from src.graph_rag.graph.falkordb_adapter import FalkorDBAdapter
-from src.graph_rag.models import AnswerResult, ChunkMatch
-from src.graph_rag.utils.llm_client import LLMClient
-from src.graph_rag.utils.text_utils import strip_orig_tags
+from graph_rag.graph.falkordb_adapter import FalkorDBAdapter
+from graph_rag.models import AnswerResult, ChunkMatch
+from graph_rag.utils.llm_client import LLMClient
+from graph_rag.utils.text_utils import strip_orig_tags
 
 
 class AnswerGenerator:

@@ -70,7 +70,7 @@ def test_end_to_end_ingest_and_query(sample_source_file, tmp_path):
     """Test complete pipeline: ingest → query → verify output format."""
     # Skip if FalkorDB not available
     try:
-        from src.graph_rag.graph.falkordb_adapter import FalkorDBAdapter
+        from graph_rag.graph.falkordb_adapter import FalkorDBAdapter
         graph = FalkorDBAdapter()
         # Clear graph for clean test
         graph.clear_graph()
@@ -141,7 +141,7 @@ def test_query_handles_empty_questions():
 def test_query_handles_invalid_questions():
     """Test that query() handles invalid questions gracefully."""
     try:
-        from src.graph_rag.graph.falkordb_adapter import FalkorDBAdapter
+        from graph_rag.graph.falkordb_adapter import FalkorDBAdapter
         graph = FalkorDBAdapter()
     except Exception:
         pytest.skip("FalkorDB not available")

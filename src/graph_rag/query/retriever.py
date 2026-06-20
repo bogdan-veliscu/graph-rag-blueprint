@@ -10,9 +10,9 @@ import faiss
 import numpy as np
 from rank_bm25 import BM25Okapi
 
-from src.graph_rag.config import config
-from src.graph_rag.models import ChunkMatch
-from src.graph_rag.utils.embeddings import embed_text
+from graph_rag.config import config
+from graph_rag.models import ChunkMatch
+from graph_rag.utils.embeddings import embed_text
 
 
 class Retriever:

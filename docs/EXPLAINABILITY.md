@@ -150,7 +150,7 @@ The explainability summary will be printed to the console, and full details will
 ### Programmatic Access
 
 ```python
-from src.graph_rag.query.async_orchestrator import AsyncQueryOrchestrator
+from graph_rag.query.async_orchestrator import AsyncQueryOrchestrator
 
 orchestrator = AsyncQueryOrchestrator()
 result = await orchestrator.process_query_async("Your question")

@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.graph_rag.query.async_orchestrator import AsyncQueryOrchestrator
-from src.graph_rag.utils.progress import ProgressTracker
+from graph_rag.query.async_orchestrator import AsyncQueryOrchestrator
+from graph_rag.utils.progress import ProgressTracker
 
 
 @pytest.mark.asyncio
@@ -53,7 +53,7 @@ def test_progress_tracker_updates():
 def test_progress_tracker_without_tqdm():
     """Test progress tracker fallback when tqdm not available."""
     # Temporarily disable tqdm
-    import src.graph_rag.utils.progress as progress_module
+    import graph_rag.utils.progress as progress_module
 
     original_available = progress_module.TQDM_AVAILABLE
     progress_module.TQDM_AVAILABLE = False

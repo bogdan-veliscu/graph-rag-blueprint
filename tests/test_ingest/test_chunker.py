@@ -2,8 +2,8 @@
 
 import pytest
 
-from src.graph_rag.ingest.chunker import chunk_document_pages
-from src.graph_rag.models import Page
+from graph_rag.ingest.chunker import chunk_document_pages
+from graph_rag.models import Page
 
 
 def test_chunker_preserves_page_boundaries_and_overlap(sample_page: Page, sample_document):

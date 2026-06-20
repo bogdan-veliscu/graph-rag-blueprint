@@ -6,8 +6,8 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from src.graph_rag.models import DocumentMetadata, PageMetadata, ParsedSourceDocument
-from src.graph_rag.utils.text_utils import parse_orig_tags
+from graph_rag.models import DocumentMetadata, PageMetadata, ParsedSourceDocument
+from graph_rag.utils.text_utils import parse_orig_tags
 
 logger = logging.getLogger(__name__)
 

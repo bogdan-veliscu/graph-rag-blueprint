@@ -4,16 +4,16 @@ import asyncio
 import re
 from typing import List
 
-from src.graph_rag.graph.falkordb_adapter import FalkorDBAdapter
-from src.graph_rag.models import AnswerResult
-from src.graph_rag.query.answer_generator import AnswerGenerator
-from src.graph_rag.query.entity_linker import EntityLinker
-from src.graph_rag.query.explainability import ExplainabilityCollector
-from src.graph_rag.query.graph_traversal import GraphTraverser
-from src.graph_rag.query.query_parser import QueryParser
-from src.graph_rag.query.reranker import Reranker
-from src.graph_rag.query.retriever import Retriever
-from src.graph_rag.utils.async_llm_client import AsyncLLMClient
+from graph_rag.graph.falkordb_adapter import FalkorDBAdapter
+from graph_rag.models import AnswerResult
+from graph_rag.query.answer_generator import AnswerGenerator
+from graph_rag.query.entity_linker import EntityLinker
+from graph_rag.query.explainability import ExplainabilityCollector
+from graph_rag.query.graph_traversal import GraphTraverser
+from graph_rag.query.query_parser import QueryParser
+from graph_rag.query.reranker import Reranker
+from graph_rag.query.retriever import Retriever
+from graph_rag.utils.async_llm_client import AsyncLLMClient
 
 
 class AsyncQueryOrchestrator:
@@ -74,7 +74,7 @@ class AsyncQueryOrchestrator:
         try:
             # Retrieve chunks (synchronous) - get dense/sparse separately for explainability
             retrieve_start = time.time()
-            from src.graph_rag.config import config
+            from graph_rag.config import config
             dense_matches = []
             sparse_matches = []
             if self.retriever.faiss_index and self.retriever.chunk_metadata:
@@ -190,7 +190,7 @@ Answer the question using ONLY the context above. Include inline citations like 
         unique_citations = sorted(set(int(n) for n in citation_numbers))
 
         # Format reference list using AnswerGenerator's method
-        from src.graph_rag.query.answer_generator import AnswerGenerator
+        from graph_rag.query.answer_generator import AnswerGenerator
 
         generator = AnswerGenerator(self.graph)
         reference_list = generator._format_reference_list(

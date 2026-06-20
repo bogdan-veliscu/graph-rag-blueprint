@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import List
 
-from src.graph_rag.models import Document, Page, ParsedSourceDocument
+from graph_rag.models import Document, Page, ParsedSourceDocument
 
 
 def convert_source_to_document_nodes(

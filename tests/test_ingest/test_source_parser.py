@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from src.graph_rag.ingest.source_parser import parse_source_data
-from src.graph_rag.utils.text_utils import parse_orig_tags
+from graph_rag.ingest.source_parser import parse_source_data
+from graph_rag.utils.text_utils import parse_orig_tags
 
 
 def test_parse_source_data_extracts_document_metadata(sample_source_file: Path):

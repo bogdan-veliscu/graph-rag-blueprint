@@ -3,8 +3,8 @@
 import time
 from typing import Any, Dict, List, Optional
 
-from src.graph_rag.config import config
-from src.graph_rag.models import AnswerResult, ChunkMatch, Entity
+from graph_rag.config import config
+from graph_rag.models import AnswerResult, ChunkMatch, Entity
 
 
 class ExplainabilityCollector:

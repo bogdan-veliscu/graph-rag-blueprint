@@ -2,6 +2,14 @@
 
 A high-accuracy GraphRAG (Graph-based Retrieval-Augmented Generation) system for legal document question-answering.
 
+## Status
+
+This is a public blueprint/proof repo for experimenting with legal-document
+GraphRAG: structured legal source parsing, knowledge graph construction,
+hybrid retrieval, explainable citations, and LLM-as-judge evaluation. It is
+intended for local experimentation and adaptation, not as a hosted SaaS
+product.
+
 ## Features
 
 - **Rich Metadata Parsing**: Extracts document titles, dates, issue numbers, authors, publishers from XML-tagged markdown files
@@ -9,6 +17,14 @@ A high-accuracy GraphRAG (Graph-based Retrieval-Augmented Generation) system for
 - **Hybrid Retrieval**: Combines dense (FAISS), sparse (BM25), and graph traversal for optimal accuracy
 - **Vancouver-Style Citations**: Generates answers with properly formatted citations using rich metadata
 - **Multilingual Support**: Parses `<orig>` tags for Arabic/English content
+
+## Sample Data Boundary
+
+The demo expects legal source documents under `data/source_data/` and smaller
+fast-path examples under `data/fast_data/`. Treat these as sample/demo corpus
+inputs for local experimentation. For real usage, replace them with documents
+you are authorized to process and review the extracted metadata before relying
+on answers or citations.
 
 ## Quick Start
 
@@ -85,6 +101,9 @@ make demo
 
 # Run tests
 make test
+
+# Run fast tests that do not require FalkorDB, Docker, or LLM credentials
+make test-fast
 
 # Evaluate answers (LLM-as-judge)
 make evaluate QUESTIONS=data/questions.json ANSWERS=answers.json
@@ -220,6 +239,9 @@ make test
 # or
 pytest
 
+# Run fast tests
+make test-fast
+
 # Run specific test suite
 pytest tests/test_ingest/
 pytest tests/test_query/
@@ -250,4 +272,3 @@ scripts/
 ## License
 
 MIT
-

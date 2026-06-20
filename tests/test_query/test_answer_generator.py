@@ -4,9 +4,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.graph_rag.graph.falkordb_adapter import FalkorDBAdapter
-from src.graph_rag.models import ChunkMatch
-from src.graph_rag.query.answer_generator import AnswerGenerator
+from graph_rag.graph.falkordb_adapter import FalkorDBAdapter
+from graph_rag.models import ChunkMatch
+from graph_rag.query.answer_generator import AnswerGenerator
 
 
 def test_answer_generator_formats_rich_citations():
