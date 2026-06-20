@@ -3,14 +3,14 @@
 import logging
 from typing import Any, Dict, List, Optional
 
-from src.graph_rag.graph.falkordb_adapter import FalkorDBAdapter
-from src.graph_rag.models import AnswerResult, Entity
-from src.graph_rag.query.answer_generator import AnswerGenerator
-from src.graph_rag.query.entity_linker import EntityLinker
-from src.graph_rag.query.graph_traversal import GraphTraverser
-from src.graph_rag.query.query_parser import QueryParser
-from src.graph_rag.query.reranker import Reranker
-from src.graph_rag.query.retriever import Retriever
+from graph_rag.graph.falkordb_adapter import FalkorDBAdapter
+from graph_rag.models import AnswerResult, Entity
+from graph_rag.query.answer_generator import AnswerGenerator
+from graph_rag.query.entity_linker import EntityLinker
+from graph_rag.query.graph_traversal import GraphTraverser
+from graph_rag.query.query_parser import QueryParser
+from graph_rag.query.reranker import Reranker
+from graph_rag.query.retriever import Retriever
 
 logger = logging.getLogger(__name__)
 

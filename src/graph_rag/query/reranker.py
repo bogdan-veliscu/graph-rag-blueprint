@@ -2,8 +2,8 @@
 
 from typing import List
 
-from src.graph_rag.config import config
-from src.graph_rag.models import ChunkMatch
+from graph_rag.config import config
+from graph_rag.models import ChunkMatch
 
 
 class Reranker:

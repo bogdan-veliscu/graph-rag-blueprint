@@ -1,4 +1,4 @@
-.PHONY: help install ingest query query-file test lint format demo clean validate-graph falkordb-start falkordb-stop falkordb-status falkordb-restart falkordb-logs
+.PHONY: help install ingest query query-file test test-fast lint format demo clean validate-graph falkordb-start falkordb-stop falkordb-status falkordb-restart falkordb-logs
 
 help: ## Show this help message
 	@echo "GraphRAG Legal System - Makefile Commands"
@@ -65,6 +65,9 @@ query-file: ## Query from a JSON file (usage: make query-file FILE=data/sample_q
 
 test: ## Run all tests
 	python3 -m pytest tests/ -v
+
+test-fast: ## Run fast tests that do not require FalkorDB, Docker, or LLM credentials
+	uv run pytest tests/test_output_format.py tests/test_ingest/test_chunker.py tests/test_ingest/test_source_parser.py -q
 
 evaluate: ## Evaluate answers (usage: make evaluate QUESTIONS=data/questions.json ANSWERS=answers.json)
 	@if [ -z "$(QUESTIONS)" ] || [ -z "$(ANSWERS)" ]; then \
@@ -166,4 +169,3 @@ falkordb-restart: falkordb-stop falkordb-start ## Restart FalkorDB container
 
 falkordb-logs: ## Show FalkorDB logs
 	@docker logs falkordb 2>/dev/null || echo "FalkorDB container not found. Run 'make falkordb-start' first."
-

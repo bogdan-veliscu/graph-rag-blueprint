@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.graph_rag.query.retriever import Retriever
+from graph_rag.query.retriever import Retriever
 
 
 def test_retriever_rrf_blends_dense_and_sparse_scores():

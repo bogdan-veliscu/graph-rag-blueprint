@@ -5,8 +5,8 @@ from typing import Any, Dict, List, Optional
 import redis
 from redis.commands.graph import Graph
 
-from src.graph_rag.config import config
-from src.graph_rag.models import Document, Entity, NodeType, Page
+from graph_rag.config import config
+from graph_rag.models import Document, Entity, NodeType, Page
 
 
 class FalkorDBAdapter:

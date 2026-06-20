@@ -3,9 +3,9 @@
 from collections import deque
 from typing import Dict, List, Set
 
-from src.graph_rag.config import config
-from src.graph_rag.graph.falkordb_adapter import FalkorDBAdapter
-from src.graph_rag.models import ChunkMatch, Entity, NodeType
+from graph_rag.config import config
+from graph_rag.graph.falkordb_adapter import FalkorDBAdapter
+from graph_rag.models import ChunkMatch, Entity, NodeType
 
 
 class GraphTraverser:

@@ -3,7 +3,7 @@
 from collections import defaultdict
 from typing import Dict, List
 
-from src.graph_rag.models import Entity, Relationship, EdgeType
+from graph_rag.models import Entity, Relationship, EdgeType
 
 
 def extract_relations(

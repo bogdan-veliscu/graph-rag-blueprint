@@ -5,8 +5,8 @@ from typing import List
 
 import tiktoken
 
-from src.graph_rag.config import config
-from src.graph_rag.models import Chunk, Page
+from graph_rag.config import config
+from graph_rag.models import Chunk, Page
 
 
 def chunk_document_pages(document_id: str, pages: List[Page]) -> List[Chunk]:

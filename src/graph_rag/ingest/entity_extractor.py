@@ -3,8 +3,8 @@
 import re
 from typing import List, Optional
 
-from src.graph_rag.models import Entity, EntityType
-from src.graph_rag.utils.text_utils import parse_orig_tags
+from graph_rag.models import Entity, EntityType
+from graph_rag.utils.text_utils import parse_orig_tags
 
 # Regex patterns for legal entities
 LEGAL_ENTITY_PATTERNS = {

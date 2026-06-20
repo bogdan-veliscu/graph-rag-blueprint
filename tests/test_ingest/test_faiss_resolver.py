@@ -2,8 +2,8 @@
 
 import pytest
 
-from src.graph_rag.ingest.faiss_resolver import FAISSEntityResolver
-from src.graph_rag.models import Entity, EntityType
+from graph_rag.ingest.faiss_resolver import FAISSEntityResolver
+from graph_rag.models import Entity, EntityType
 
 
 def test_resolve_entities_merges_duplicate_variants():

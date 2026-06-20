@@ -13,16 +13,16 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn
 
-from src.graph_rag.config import config
-from src.graph_rag.graph.falkordb_adapter import FalkorDBAdapter
-from src.graph_rag.ingest.chunker import chunk_document_pages
-from src.graph_rag.ingest.entity_extractor import extract_entities_from_text
-from src.graph_rag.ingest.faiss_resolver import FAISSEntityResolver
-from src.graph_rag.ingest.graph_builder import GraphBuilder
-from src.graph_rag.ingest.relation_extractor import extract_relations
-from src.graph_rag.ingest.source_converter import convert_source_to_document_nodes
-from src.graph_rag.ingest.source_parser import parse_source_data
-from src.graph_rag.models import Document, Page, Chunk, Entity
+from graph_rag.config import config
+from graph_rag.graph.falkordb_adapter import FalkorDBAdapter
+from graph_rag.ingest.chunker import chunk_document_pages
+from graph_rag.ingest.entity_extractor import extract_entities_from_text
+from graph_rag.ingest.faiss_resolver import FAISSEntityResolver
+from graph_rag.ingest.graph_builder import GraphBuilder
+from graph_rag.ingest.relation_extractor import extract_relations
+from graph_rag.ingest.source_converter import convert_source_to_document_nodes
+from graph_rag.ingest.source_parser import parse_source_data
+from graph_rag.models import Document, Page, Chunk, Entity
 
 logger = logging.getLogger(__name__)
 console = Console()

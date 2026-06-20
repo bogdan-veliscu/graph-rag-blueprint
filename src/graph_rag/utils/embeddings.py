@@ -4,7 +4,7 @@ from typing import List
 
 from sentence_transformers import SentenceTransformer
 
-from src.graph_rag.config import config
+from graph_rag.config import config
 
 # Global model instance
 _embedding_model = None

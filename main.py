@@ -12,8 +12,8 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
 from rich.table import Table
 
-from src.graph_rag.config import config
-from src.graph_rag.utils.progress import ProgressTracker
+from graph_rag.config import config
+from graph_rag.utils.progress import ProgressTracker
 
 # Setup rich console and logging
 console = Console()
@@ -34,7 +34,7 @@ def ingest(document_paths: List[str]) -> None:
     Args:
         document_paths: List of paths to document directories or files
     """
-    from src.graph_rag.ingest.pipeline import ingest_documents
+    from graph_rag.ingest.pipeline import ingest_documents
 
     console.print(Panel.fit(
         f"[bold cyan]GraphRAG Ingestion[/bold cyan]\n"
@@ -85,8 +85,8 @@ def _query_parallel(questions: List[str], output_path: str) -> List[str]:
     """
     import asyncio
 
-    from src.graph_rag.config import config
-    from src.graph_rag.query.async_orchestrator import AsyncQueryOrchestrator
+    from graph_rag.config import config
+    from graph_rag.query.async_orchestrator import AsyncQueryOrchestrator
 
     logger.info(f"Processing {len(questions)} questions in parallel")
     orchestrator = AsyncQueryOrchestrator()
@@ -109,8 +109,8 @@ def _query_parallel(questions: List[str], output_path: str) -> List[str]:
     answers = [r.answer for r in results]
     
     # Save to file - include explainability if enabled
-    from src.graph_rag.config import config
-    from src.graph_rag.query.explainability import format_explainability_human_readable
+    from graph_rag.config import config
+    from graph_rag.query.explainability import format_explainability_human_readable
     
     output_data = []
     for result in results:
@@ -156,7 +156,7 @@ def _query_sequential(questions: List[str], output_path: str) -> List[str]:
     Returns:
         List of answer strings
     """
-    from src.graph_rag.query.orchestrator import QueryOrchestrator
+    from graph_rag.query.orchestrator import QueryOrchestrator
 
     logger.info(f"Processing {len(questions)} questions sequentially")
     orchestrator = QueryOrchestrator()
@@ -172,7 +172,7 @@ def _query_sequential(questions: List[str], output_path: str) -> List[str]:
     answers = [r.answer for r in results]
     
     # Save to file - include explainability if enabled (note: sequential mode doesn't collect explainability yet)
-    from src.graph_rag.config import config
+    from graph_rag.config import config
     output_data = [{"answer": answer} for answer in answers]
     output_path_obj = Path(output_path)
     output_path_obj.parent.mkdir(parents=True, exist_ok=True)
@@ -248,7 +248,7 @@ if __name__ == "__main__":
             sys.exit(1)
 
         # Get LLM provider info for display
-        from src.graph_rag.config import config
+        from graph_rag.config import config
         llm_info = []
         if config.llm_provider == "ollama":
             llm_info.append(f"Model: [bold]{config.ollama_model}[/bold]")
